@@ -127,6 +127,61 @@ void dictionaryTest(){
     printDictionary(dictionary);
 }
 
+void graphTest(){
+    comp_graph_t *grafo;
+    createGraph(&grafo);
+    printGraph(grafo);
+
+    insertNode(&grafo, 0, 0);
+    insertNode(&grafo, 1, 1);
+    insertNode(&grafo, 2, 2);
+    insertNode(&grafo, 3, 3);
+    insertNode(&grafo, 4, 4);
+    insertNode(&grafo, 5, 5);
+    insertNode(&grafo, 6, 6);
+    insertNode(&grafo, 7, 7);
+    insertNode(&grafo, 8, 8);
+    insertNode(&grafo, 9, 9);
+    printGraph(grafo);
+
+    insertEdge(grafo, 0, 1);
+    insertEdge(grafo, 0, 2);
+    insertEdge(grafo, 1, 3);
+    insertEdge(grafo, 3, 6);
+    insertEdge(grafo, 2, 3);
+    insertEdge(grafo, 3, 4);
+    insertEdge(grafo, 3, 5);
+    insertEdge(grafo, 3, 6);
+    insertEdge(grafo, 6, 7);
+    insertEdge(grafo, 5, 7);
+    insertEdge(grafo, 4, 7);
+    insertEdge(grafo, 7, 8);
+    insertEdge(grafo, 8, 9);
+    insertEdge(grafo, 7, 8);
+    insertEdge(grafo, 9, 9);
+    insertEdge(grafo, 9, 0);
+    printGraph(grafo);
+
+    updateNode(grafo, 1, 999);
+    updateNode(grafo, 3, 999);
+    updateNode(grafo, 5, 999);
+    updateNode(grafo, 7, 999);
+    updateNode(grafo, 9, 999);
+    printGraph(grafo);
+
+    removeNodeEdges(grafo, 2);
+    removeNodeEdges(grafo, 5);
+    removeNodeEdges(grafo, 8);
+    printGraph(grafo);
+
+    removeNode(&grafo, 3);
+    removeNode(&grafo, 6);
+    printGraph(grafo);
+
+    destroyGrapth(&grafo);
+    printGraph(grafo);
+}
+
 int main (int argc, char **argv)
 {
 	int token = TOKEN_ERRO;
@@ -136,6 +191,7 @@ int main (int argc, char **argv)
 
 	linkedListTest();
 	dictionaryTest();
+	graphTest();
 
 	return 0;
 }
