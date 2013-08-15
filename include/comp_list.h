@@ -22,7 +22,7 @@ void createList(comp_list_t **list);
 int insertTail(comp_list_t **list, int value);
 int delete(comp_list_t **list, int position);
 int getFirst(comp_list_t *list);
-int isEmpty(comp_list_t *list);
+int isListEmpty(comp_list_t *list);
 int update(comp_list_t *list, int position, int newValue);
 void clearList(comp_list_t **list);
 void printList(comp_list_t *list);

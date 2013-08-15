@@ -72,7 +72,7 @@ int getFirst(comp_list_t *list){
 }
 
 /* return 1 if list is empty, 0 otherwise */
-int isEmpty(comp_list_t *list){
+int isListEmpty(comp_list_t *list){
 	return list == NULL;
 }
 
@@ -110,7 +110,7 @@ void clearList(comp_list_t **list){
 
 /* print list nodes */
 void printList(comp_list_t *list){
-	if(isEmpty(list)){
+	if(isListEmpty(list)){
 		printf("empty list\n\n");
 		return;
 	}
