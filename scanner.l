@@ -5,6 +5,7 @@ int numLinhas = 0;
 
 CARACTER_ [A-Za-z_]
 DIGITO [0-9]
+%x IN_COMMENT
 
 %%
 \n { numLinhas++; }
@@ -21,7 +22,9 @@ do { return TK_PR_DO; }
 input { return TK_PR_INPUT; }
 output { return TK_PR_OUTPUT; }
 return { return TK_PR_RETURN; }
+
 ","|";"|":"|"("|")"|"["|"]"|"{"|"}"|"+"|"-"|"*"|"/"|"<"|">"|"="|"!"|"&"|"$" { return yytext[0]; }
+
 "<""=" { return TK_OC_LE; }
 ">""=" { return TK_OC_GE; }
 "=""=" { return TK_OC_EQ; }
@@ -34,10 +37,18 @@ return { return TK_PR_RETURN; }
 false { return TK_LIT_FALSE; }
 true { return TK_LIT_TRUE; }
 ("'")([^"'"])("'") { return TK_LIT_CHAR; }
-"\""(.)*"\"" { return TK_LIT_STRING; }
+("\"")([^"\""]+)("\"") { return TK_LIT_STRING; }
 
 {CARACTER_}({CARACTER_}|{DIGITO})* { return TK_IDENTIFICADOR; }
 
+"/""/"[^\n]* { } //comentarios comecando por //
 
+"/""*" { BEGIN(IN_COMMENT); }	//comentarios do tipo /*...*/
+<IN_COMMENT>{
+	"*""/" { BEGIN(INITIAL); printf("comentario de linhas"); }
+	[^"*"\n]+ { }   // eat comment in chunks
+	"*"       { }       // eat the lone star
+	\n        { numLinhas++; }
+}
 . { return TOKEN_ERRO; }
 %%
