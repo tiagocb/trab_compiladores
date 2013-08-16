@@ -1,8 +1,13 @@
 %{
 #include "tokens.h"
-int counter = 0;
+int numLinhas = 0;
 %}
+
+CARACTER_ [A-Za-z_]
+DIGITO [0-9]
+
 %%
+\n { numLinhas++; }
 int { return TK_PR_INT; }
 float { return TK_PR_FLOAT; }
 bool { return TK_PR_BOOL; }
@@ -16,7 +21,22 @@ do { return TK_PR_DO; }
 input { return TK_PR_INPUT; }
 output { return TK_PR_OUTPUT; }
 return { return TK_PR_RETURN; }
+","|";"|":"|"("|")"|"["|"]"|"{"|"}"|"+"|"-"|"*"|"/"|"<"|">"|"="|"!"|"&"|"$" { return yytext[0]; }
+"<""=" { return TK_OC_LE; }
+">""=" { return TK_OC_GE; }
+"=""=" { return TK_OC_EQ; }
+"!""=" { return TK_OC_NE; }
+"&""&" { return TK_OC_AND; }
+"|""|" { return TK_OC_OR; }
 
+("-")?{DIGITO}+ { return TK_LIT_INT; }
+("-")?{DIGITO}+"."{DIGITO}+ { return TK_LIT_FLOAT; }
+false { return TK_LIT_FALSE; }
+true { return TK_LIT_TRUE; }
+("'")([^"'"])("'") { return TK_LIT_CHAR; }
+"\""(.)*"\"" { return TK_LIT_STRING; }
+
+{CARACTER_}({CARACTER_}|{DIGITO})* { return TK_IDENTIFICADOR; }
 
 
 . { return TOKEN_ERRO; }
