@@ -1,6 +1,16 @@
 %{
 #include "tokens.h"
-int numLinhas = 0;
+#include "comp_dict.h"
+
+int linha = 1;
+
+comp_dict_t tabelaDeSimbolos;
+
+int obtemLinhaAtual();
+
+void inicializaTabelaDeSimbolos();
+void insereLexema();
+void imprimeTabelaDeSimbolos();
 %}
 
 CARACTER_ [A-Za-z_]
@@ -8,7 +18,7 @@ DIGITO [0-9]
 %x IN_COMMENT
 
 %%
-\n { numLinhas++; }
+\n { linha++;}
 int { return TK_PR_INT; }
 float { return TK_PR_FLOAT; }
 bool { return TK_PR_BOOL; }
@@ -32,14 +42,14 @@ return { return TK_PR_RETURN; }
 "&""&" { return TK_OC_AND; }
 "|""|" { return TK_OC_OR; }
 
-("-")?{DIGITO}+ { return TK_LIT_INT; }
-("-")?{DIGITO}+"."{DIGITO}+ { return TK_LIT_FLOAT; }
+("-")?{DIGITO}+ { insereLexema(); return TK_LIT_INT; }
+("-")?{DIGITO}+"."{DIGITO}+ { insereLexema(); return TK_LIT_FLOAT; }
 false { return TK_LIT_FALSE; }
 true { return TK_LIT_TRUE; }
-("'")([^"'"])("'") { return TK_LIT_CHAR; }
-("\"")([^"\""]+)("\"") { return TK_LIT_STRING; }
+("'")([^"'"])("'") { insereLexema(); return TK_LIT_CHAR; }
+("\"")([^"\""]+)("\"") { insereLexema(); return TK_LIT_STRING; }
 
-{CARACTER_}({CARACTER_}|{DIGITO})* { return TK_IDENTIFICADOR; }
+{CARACTER_}({CARACTER_}|{DIGITO})* { insereLexema(); return TK_IDENTIFICADOR; }
 
 "/""/"[^\n]* { } //comentarios comecando por //
 
@@ -48,7 +58,26 @@ true { return TK_LIT_TRUE; }
 	"*""/" { BEGIN(INITIAL); }
 	[^"*"\n]+ { }   // eat comment in chunks
 	"*"       { }       // eat the lone star
-	\n        { numLinhas++; }
+	\n        { linha++; }
 }
+
+" " { }
 . { return TOKEN_ERRO; }
 %%
+
+int obtemLinhaAtual(){
+	return linha;
+}
+
+void inicializaTabelaDeSimbolos(){
+	createDictionaty(&tabelaDeSimbolos, 10000);
+}
+
+void insereLexema(){
+	insertKey(&tabelaDeSimbolos, yytext, linha);
+}
+
+void imprimeTabelaDeSimbolos(){
+	printDictionary(tabelaDeSimbolos);
+}
+

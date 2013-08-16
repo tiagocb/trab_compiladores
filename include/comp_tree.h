@@ -7,7 +7,7 @@ typedef struct _comp_tree_t{
 } comp_tree_t;
 
 void createTree(comp_tree_t **tree);
-int countNodes(comp_tree_t *tree);
+int countTreeNodes(comp_tree_t *tree);
 int containsValue(comp_tree_t *tree, int value);
 int countLeafs(comp_tree_t *tree);
 int countDepth(comp_tree_t *tree);
@@ -17,5 +17,5 @@ int containsKey(comp_tree_t *tree, int key);
 int insert(comp_tree_t **tree, int value, int key, int parentKey);
 int updateValue(comp_tree_t *tree, int key, int newValue);
 void destroyTree(comp_tree_t **tree);
-int removeNode(comp_tree_t **tree, int keyNode);
+int removeTreeNode(comp_tree_t **tree, int keyNode);
 void printTree(comp_tree_t *tree);

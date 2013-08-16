@@ -6,14 +6,14 @@ void createTree(comp_tree_t **tree){
 	*tree = NULL;
 }
 
-int countNodes(comp_tree_t *tree){
+int countTreeNodes(comp_tree_t *tree){
 	if(tree == NULL) return 0;
 
 	comp_tree_t *ptAux = tree;
 
 	int counter = 0;
 	while(ptAux != NULL){
-		counter += countNodes(ptAux->child);
+		counter += countTreeNodes(ptAux->child);
 		counter++;
 		ptAux = ptAux->brother;
 	}
@@ -178,7 +178,7 @@ void destroyTree(comp_tree_t **tree){
 }
 
 /* Remove node and all his child */
-int removeNode(comp_tree_t **tree, int keyNode){
+int removeTreeNode(comp_tree_t **tree, int keyNode){
 	if(*tree == NULL) return 1;
 
 	comp_tree_t *ptAux = *tree, *ptAux2 = NULL, *ptParent;
@@ -193,7 +193,7 @@ int removeNode(comp_tree_t **tree, int keyNode){
 			free(ptAux);
 			return 0;
 		}
-		if(removeNode(&(ptAux->child), keyNode) == 0) return 0;
+		if(removeTreeNode(&(ptAux->child), keyNode) == 0) return 0;
 		ptAux2 = ptAux;
 		ptAux = ptAux->brother;
 	}
