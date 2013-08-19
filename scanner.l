@@ -46,8 +46,8 @@ return { return TK_PR_RETURN; }
 ("-")?{DIGITO}+"."{DIGITO}+ { insereLexema(); return TK_LIT_FLOAT; }
 false { return TK_LIT_FALSE; }
 true { return TK_LIT_TRUE; }
-("'")([^"'"])("'") { insereLexema(); return TK_LIT_CHAR; }
-("\"")([^"\""]+)("\"") { insereLexema(); return TK_LIT_STRING; }
+("'")([^\n])("'") { insereLexema(); return TK_LIT_CHAR; }
+("\"")([^"\""]*)("\"") { insereLexema(); return TK_LIT_STRING; }
 
 {CARACTER_}({CARACTER_}|{DIGITO})* { insereLexema(); return TK_IDENTIFICADOR; }
 
@@ -59,9 +59,11 @@ true { return TK_LIT_TRUE; }
 	[^"*"\n]+ { }   // eat comment in chunks
 	"*"       { }       // eat the lone star
 	\n        { linha++; }
+	.	  { }
 }
 
 " " { }
+"	" { }
 . { return TOKEN_ERRO; }
 %%
 
