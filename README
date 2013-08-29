@@ -1,4 +1,17 @@
 TRABALHO DE COMPILADORES
 
-Utilize as instruções da etapa 0 fornecidas pelo professor para compilar.
-Se você tiver instalado o flex e o bison, a compilação deve ocorrer normalmente
+Para copia do repositório:
+$ git clone https://github.org/tiagocb/trab_compiladores.git
+$ cd trab_compiladores
+
+Para compilar: (Se você tiver instalado o flex e o bison, a compilação deve ocorrer normalmente)
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+
+-------------------------------
+
+Exemplo de código para testes: 
+	- teste1.txt (originalmente criado para testar a gramática da linguagem)
+

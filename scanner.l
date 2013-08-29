@@ -1,15 +1,21 @@
 %{
-#include "tokens.h"
+#include "parser.h"
 #include "comp_dict.h"
 
+#define IKS_SIMBOLO_INDEFINIDO 0
+#define IKS_SIMBOLO_LITERAL_INT 1
+#define IKS_SIMBOLO_LITERAL_FLOAT 2
+#define IKS_SIMBOLO_LITERAL_CHAR 3
+#define IKS_SIMBOLO_LITERAL_STRING 4
+#define IKS_SIMBOLO_LITERAL_BOOL 5
+#define IKS_SIMBOLO_IDENTIFICADOR 6
+
 int linha = 1;
-
-comp_dict_t tabelaDeSimbolos;
-
 int obtemLinhaAtual();
 
+comp_dict_t tabelaDeSimbolos;
 void inicializaTabelaDeSimbolos();
-void insereLexema();
+void insereLexema(int tipo);
 void imprimeTabelaDeSimbolos();
 %}
 
@@ -42,14 +48,14 @@ return { return TK_PR_RETURN; }
 "&""&" { return TK_OC_AND; }
 "|""|" { return TK_OC_OR; }
 
-("-")?{DIGITO}+ { insereLexema(); return TK_LIT_INT; }
-("-")?{DIGITO}+"."{DIGITO}+ { insereLexema(); return TK_LIT_FLOAT; }
-false { return TK_LIT_FALSE; }
-true { return TK_LIT_TRUE; }
-("'")([^\n])("'") { insereLexema(); return TK_LIT_CHAR; }
-("\"")([^"\""]*)("\"") { insereLexema(); return TK_LIT_STRING; }
+("-")?{DIGITO}+ { insereLexema(IKS_SIMBOLO_LITERAL_INT); return TK_LIT_INT; }
+("-")?{DIGITO}+"."{DIGITO}+ { insereLexema(IKS_SIMBOLO_LITERAL_FLOAT); return TK_LIT_FLOAT; }
+false { insereLexema(IKS_SIMBOLO_LITERAL_BOOL); return TK_LIT_FALSE; }
+true { insereLexema(IKS_SIMBOLO_LITERAL_BOOL); return TK_LIT_TRUE; }
+("'")([^\n])("'") { insereLexema(IKS_SIMBOLO_LITERAL_CHAR); return TK_LIT_CHAR; }
+("\"")([^"\""]*)("\"") { insereLexema(IKS_SIMBOLO_LITERAL_STRING); return TK_LIT_STRING; }
 
-{CARACTER_}({CARACTER_}|{DIGITO})* { insereLexema(); return TK_IDENTIFICADOR; }
+{CARACTER_}({CARACTER_}|{DIGITO})* { insereLexema(IKS_SIMBOLO_IDENTIFICADOR); return TK_IDENTIFICADOR; }
 
 "/""/"[^\n]* { } //comentarios comecando por //
 
@@ -64,7 +70,7 @@ true { return TK_LIT_TRUE; }
 
 " " { }
 "	" { }
-. { return TOKEN_ERRO; }
+. { insereLexema(IKS_SIMBOLO_INDEFINIDO); return TOKEN_ERRO; }
 %%
 
 int obtemLinhaAtual(){
@@ -72,11 +78,11 @@ int obtemLinhaAtual(){
 }
 
 void inicializaTabelaDeSimbolos(){
-	createDictionaty(&tabelaDeSimbolos, 10000);
+	createDictionaty(&tabelaDeSimbolos, 10);
 }
 
-void insereLexema(){
-	insertKey(&tabelaDeSimbolos, yytext, linha);
+void insereLexema(int tipo){
+	insertKey(&tabelaDeSimbolos, yytext, linha, tipo);
 }
 
 void imprimeTabelaDeSimbolos(){

@@ -38,7 +38,7 @@ comp_dict_item_t *searchKey(comp_dict_t dict, char *key){
 }
 
 /* Insert key (if it doesnt exist) with its associated value */
-int insertKey(comp_dict_t *dict, char *key, int value){
+int insertKey(comp_dict_t *dict, char *key, int value, int type){
     if(searchKey(*dict, key) != NULL)
         return 1;//key already exists
 
@@ -52,6 +52,7 @@ int insertKey(comp_dict_t *dict, char *key, int value){
 
     newNode->item->key = strdup(key);
     newNode->item->value = value;
+    newNode->item->type = type;
     newNode->next = dict->table[hashValue];
     dict->table[hashValue] = newNode;
     dict->numberOfElements++;
@@ -141,7 +142,7 @@ void printDictionary(comp_dict_t dict){
         return;
     }
 
-    printf("Elements: %d\n", dict.numberOfElements);
+    printf("Number of nodes: %d\n", dict.numberOfElements);
     comp_dict_node_t *node;
     int i;
     for(i = 0; i < dict.numberOfLists; i++){
@@ -151,7 +152,7 @@ void printDictionary(comp_dict_t dict){
 
         int counter = 0;
         while(node != NULL){
-            printf("\tnode %d: %s -> %d\n", counter, node->item->key, node->item->value);
+            printf("\tnode %d: %s -> (%d, %d)\n", counter, node->item->key, node->item->value, node->item->type);
             node = node->next;
             counter++;
         }

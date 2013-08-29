@@ -1,36 +1,35 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "comp_dict.h"
 #include "comp_list.h"
 #include "comp_tree.h"
 #include "comp_graph.h"
-#include "tokens.h"
 
-int getLineNumber (void)
+#define IKS_SYNTAX_SUCESSO 0
+#define IKS_SYNTAX_ERRO 1
+
+void yyerror (char const *mensagem)
 {
-	/* deve ser implementada */
-	return obtemLinhaAtual();
+	fprintf(stderr, "%s. Line %d\n", mensagem, obtemLinhaAtual());
+	exit(IKS_SYNTAX_ERRO);
 }
 
 int main (int argc, char **argv)
 {
 	inicializaTabelaDeSimbolos();
-	//a tabela de símbolos está definida em scanner.l
-	//ela associa uma string a um inteiro
-	//no momento ela armazena identificadores e literais do tipo int, float, char e string
-	//ela armazena o identificador ou o próprio literal como string e o número da linha onde foi encontrado como o inteiro.
-	//na tabela de símbolos as strings devem ser únicas portando não há mais que uma ocorrência de um literal ou identificador
-	//Importante: quando o analizador léxico identifica um dos elementos acima, ele já insere na tabela de símbolos.
+	/* A tabela de símbolos está definida em scanner.l.
+	 * Ela associa uma string a dois inteiros (lexema, linha que foi encontrado e tipo do lexema).
+	 * Na tabela de símbolos as strings devem ser únicas portando não há mais que uma ocorrência de um literal ou identificador.
+	 *
+	 * As operações sobre a tabela de símbolos são feitas pelas seguintes funções definidas em scanner.l
+	 * void inicializaTabelaDeSimbolos();
+	 * void imprimeTabelaDeSimbolos(); //cuidado, muita informacao sera imprimida
+	 * outras em breve
+	 */
 
-	//as operações sobre a tabela de símbolos são feitas pelas seguintes funções definidas em scanner.l
-	// void inicializaTabelaDeSimbolos();
-	// void insereLexema();
-	// void imprimeTabelaDeSimbolos(); //cuidado, muita informacao sera imprimida
-	// outras em breve
+	int resultado = yyparse();
 
-	int token = TOKEN_ERRO;
-	while (token = yylex()){
-		printf ("token <%d> at %d\n", token, getLineNumber());
-	}
+	//imprimeTabelaDeSimbolos(); //Verás os identificadores e literais do código compilado
 
-	return 0;
+	exit(IKS_SYNTAX_SUCESSO);
 }
