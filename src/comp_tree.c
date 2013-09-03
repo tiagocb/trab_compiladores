@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include "comp_tree.h"
 
-void createTree(comp_tree_t **tree){
+void createTree (comp_tree_t **tree) {
 	*tree = NULL;
 }
 
-int countTreeNodes(comp_tree_t *tree){
-	if(tree == NULL) return 0;
+int countTreeNodes (comp_tree_t *tree) {
+	if (tree == NULL) return 0;
 
 	comp_tree_t *ptAux = tree;
 
 	int counter = 0;
-	while(ptAux != NULL){
+	while (ptAux != NULL) {
 		counter += countTreeNodes(ptAux->child);
 		counter++;
 		ptAux = ptAux->brother;
@@ -21,13 +21,13 @@ int countTreeNodes(comp_tree_t *tree){
 	return counter;
 }
 
-int containsValue(comp_tree_t *tree, int value){
-	if(tree == NULL) return 0;
+int containsValue (comp_tree_t *tree, int value) {
+	if (tree == NULL) return 0;
 
 	comp_tree_t *ptAux = tree;
 
 	int valueFound = 0;
-	while(ptAux != NULL){
+	while (ptAux != NULL) {
 		if(ptAux->value == value) return 1;
 		valueFound = containsValue(ptAux->child, value) | valueFound;
 		ptAux = ptAux->brother;
@@ -36,14 +36,14 @@ int containsValue(comp_tree_t *tree, int value){
 	return valueFound;
 }
 
-int countLeafs(comp_tree_t *tree){
-	if(tree == NULL) return 0;
+int countLeafs (comp_tree_t *tree) {
+	if (tree == NULL) return 0;
 
 	comp_tree_t *ptAux = tree;
 
 	int counter = 0;
-	while(ptAux != NULL){
-		if(ptAux->child == NULL) counter++;
+	while (ptAux != NULL) {
+		if (ptAux->child == NULL) counter++;
 		else counter += countLeafs(ptAux->child);
 		ptAux = ptAux->brother;
 	}
@@ -52,35 +52,35 @@ int countLeafs(comp_tree_t *tree){
 }
 
 /* Check if tree is empty */
-int countDepth(comp_tree_t *tree){
-	if(tree == NULL) return 0;
+int countDepth (comp_tree_t *tree) {
+	if (tree == NULL) return 0;
 
 	comp_tree_t *ptAux = tree;
 
 	int max = 0;
-	while(ptAux != NULL){
+	while (ptAux != NULL) {
 		int tmp = countDepth(ptAux->child);
-		if(1 + tmp > max) max = 1 + tmp;
+		if (1 + tmp > max) max = 1 + tmp;
 		ptAux = ptAux->brother;
 	}
 	return max;
 }
 
 /* Check if tree is empty */
-int isTreeEmpty(comp_tree_t *tree){
-	if(tree == NULL) return 1;
+int isTreeEmpty (comp_tree_t *tree) {
+	if (tree == NULL) return 1;
 	return 0;
 }
 
-comp_tree_t *getKeyNode(comp_tree_t *tree, int key){
-	if(tree == NULL) return NULL;
+comp_tree_t *getKeyNode (comp_tree_t *tree, int key) {
+	if (tree == NULL) return NULL;
 
 	comp_tree_t *ptAux = tree;
 
-	while(ptAux != NULL){
-		if(ptAux->key == key) return ptAux;
+	while (ptAux != NULL) {
+		if (ptAux->key == key) return ptAux;
 		comp_tree_t *ptTmp = getKeyNode(ptAux->child, key);
-		if(ptTmp != NULL) return ptTmp;
+		if (ptTmp != NULL) return ptTmp;
 		ptAux = ptAux->brother;
 	}
 
@@ -88,14 +88,14 @@ comp_tree_t *getKeyNode(comp_tree_t *tree, int key){
 }
 
 /* Check if tree contains key */
-int containsKey(comp_tree_t *tree, int key){
-	if(tree == NULL) return 0;
+int containsKey (comp_tree_t *tree, int key) {
+	if (tree == NULL) return 0;
 
 	comp_tree_t *ptAux = tree;
 
 	int keyFound = 0;
-	while(ptAux != NULL){
-		if(ptAux->key == key) return 1;
+	while (ptAux != NULL) {
+		if (ptAux->key == key) return 1;
 		keyFound = containsKey(ptAux->child, key) | keyFound;
 		ptAux = ptAux->brother;
 	}
@@ -104,12 +104,12 @@ int containsKey(comp_tree_t *tree, int key){
 }
 
 /* Insert node with unique key */
-int insert(comp_tree_t **tree, int value, int key, int parentKey){
+int insert (comp_tree_t **tree, int value, int key, int parentKey) {
 	//if parent node has value = 0, and tree is empty, creates root node
-	if(parentKey == 0 && *tree == NULL){
+	if (parentKey == 0 && *tree == NULL) {
 		comp_tree_t *newNode;
 		newNode = malloc(sizeof(comp_tree_t));
-		if(newNode == NULL) return 2;//couldnt alloc
+		if (newNode == NULL) return 2;//couldnt alloc
 		newNode->key = key;
 		newNode->value = value;
 		newNode->parent = NULL;
@@ -120,16 +120,16 @@ int insert(comp_tree_t **tree, int value, int key, int parentKey){
 	}
 
 	//check if key already exists
-	if(containsKey(*tree, key)) return 1;//key already exists
+	if (containsKey(*tree, key)) return 1;//key already exists
 
 	//get parent node pointer
 	comp_tree_t *parentNode = getKeyNode(*tree, parentKey);
-	if(parentNode == NULL) return 2;//couldnt find parent
+	if (parentNode == NULL) return 2;//couldnt find parent
 
 	//create node
 	comp_tree_t *newNode;
 	newNode = malloc(sizeof(comp_tree_t));
-	if(newNode == NULL) return 3;//couldnt alloc
+	if (newNode == NULL) return 3;//couldnt alloc
 	newNode->key = key;
 	newNode->value = value;
 	newNode->parent = parentNode;
@@ -138,37 +138,37 @@ int insert(comp_tree_t **tree, int value, int key, int parentKey){
 
 	//insert node
 	comp_tree_t *ptAux = parentNode->child;
-	if(ptAux == NULL){
+	if (ptAux == NULL) {
 		parentNode->child = newNode;
 		return 0;
 	}
-	while(ptAux->brother != NULL) ptAux = ptAux->brother;
+	while (ptAux->brother != NULL) ptAux = ptAux->brother;
 	ptAux->brother = newNode;
 	return 0;
 }
 
 /* Update some node's value */
-int updateValue(comp_tree_t *tree, int key, int newValue){
-	if(tree == NULL) return 1;
+int updateValue (comp_tree_t *tree, int key, int newValue) {
+	if (tree == NULL) return 1;
 
 	comp_tree_t *ptAux = tree;
 
-	while(ptAux != NULL){
-		if(ptAux->key == key){
+	while (ptAux != NULL) {
+		if (ptAux->key == key) {
 			ptAux->value = newValue;
 			return 0;
 		}
-		if(updateValue(ptAux->child, key, newValue) == 0) return 0;
+		if (updateValue(ptAux->child, key, newValue) == 0) return 0;
 		ptAux = ptAux->brother;
 	}
 	return 1;
 }
 
 /* Destroy tree */
-void destroyTree(comp_tree_t **tree){
-	if(*tree == NULL) return;
+void destroyTree (comp_tree_t **tree) {
+	if (*tree == NULL) return;
 	comp_tree_t *ptAux = *tree, *ptAux2;
-	while(ptAux != NULL){
+	while (ptAux != NULL) {
 		destroyTree(&(ptAux->child));
 		ptAux2 = ptAux;
 		ptAux = ptAux->brother;
@@ -178,22 +178,21 @@ void destroyTree(comp_tree_t **tree){
 }
 
 /* Remove node and all his child */
-int removeTreeNode(comp_tree_t **tree, int keyNode){
-	if(*tree == NULL) return 1;
+int removeTreeNode (comp_tree_t **tree, int keyNode) {
+	if (*tree == NULL) return 1;
 
 	comp_tree_t *ptAux = *tree, *ptAux2 = NULL, *ptParent;
-
-	while(ptAux != NULL){
-		if(ptAux->key == keyNode){
-			if(ptAux->parent == NULL) return 0;
+	while (ptAux != NULL) {
+		if (ptAux->key == keyNode) {
+			if (ptAux->parent == NULL) return 0;
 			ptParent = ptAux->parent;
-			if(ptAux2 == NULL) ptParent->child = ptAux->brother;
+			if (ptAux2 == NULL) ptParent->child = ptAux->brother;
 			else ptAux2->brother = ptAux->brother;
 			destroyTree(&(ptAux->child));
 			free(ptAux);
 			return 0;
 		}
-		if(removeTreeNode(&(ptAux->child), keyNode) == 0) return 0;
+		if (removeTreeNode(&(ptAux->child), keyNode) == 0) return 0;
 		ptAux2 = ptAux;
 		ptAux = ptAux->brother;
 	}
@@ -202,11 +201,11 @@ int removeTreeNode(comp_tree_t **tree, int keyNode){
 }
 
 /* Print tree */
-void printTree(comp_tree_t *tree){
-	if(isTreeEmpty(tree)) return;
+void printTree (comp_tree_t *tree) {
+	if (isTreeEmpty(tree)) return;
 
 	comp_tree_t *ptAux = tree;
-	while(ptAux != NULL){
+	while (ptAux != NULL) {
 		printf("%d ", ptAux->key);
 		printTree(ptAux->child);
 		ptAux = ptAux->brother;

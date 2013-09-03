@@ -8,14 +8,12 @@
 #define IKS_SYNTAX_SUCESSO 0
 #define IKS_SYNTAX_ERRO 1
 
-void yyerror (char const *mensagem)
-{
+void yyerror (char const *mensagem) {
 	fprintf(stderr, "%s. Line %d\n", mensagem, obtemLinhaAtual());
 	exit(IKS_SYNTAX_ERRO);
 }
 
-int main (int argc, char **argv)
-{
+int main (int argc, char **argv) {
 	inicializaTabelaDeSimbolos();
 	/* A tabela de símbolos está definida em scanner.l.
 	 * Ela associa uma string a dois inteiros (lexema, linha que foi encontrado e tipo do lexema).

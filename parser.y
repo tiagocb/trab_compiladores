@@ -35,52 +35,52 @@
 
 /* Programa */
 
-programa :	  decl_var_global programa
-		| funcao programa
-		| /* VAZIO */;
+programa:		decl_var_global programa
+				| funcao programa
+				| /* VAZIO */;
 
 /* Declarações globais */
-decl_var_global :	  decl_var_simples ';'
-			| decl_var_vetor ';';
+decl_var_global:	decl_var_simples ';'
+					| decl_var_vetor ';';
 
-decl_var_simples :	tipo ':' TK_IDENTIFICADOR;
-decl_var_vetor :	tipo ':' TK_IDENTIFICADOR '[' TK_LIT_INT ']';
+decl_var_simples:	tipo ':' TK_IDENTIFICADOR;
+decl_var_vetor:		tipo ':' TK_IDENTIFICADOR '[' TK_LIT_INT ']';
 
 /* Definições de funções */
-funcao :	cabecalho lista_decl_var_local corpo;
-cabecalho :	  tipo ':' TK_IDENTIFICADOR '(' lista_de_parametros ')'
-		| tipo ':' TK_IDENTIFICADOR '(' /* VAZIO */ ')';
-lista_de_parametros :	  decl_var_simples
-			| decl_var_simples ',' lista_de_parametros;
-lista_decl_var_local:	  decl_var_simples ';' lista_decl_var_local
-			| /* VAZIO */;
-corpo :	bloco_de_comando;
+funcao:		cabecalho lista_decl_var_local corpo;
+cabecalho:	tipo ':' TK_IDENTIFICADOR '(' lista_de_parametros ')'
+			| tipo ':' TK_IDENTIFICADOR '(' /* VAZIO */ ')';
+lista_de_parametros:	decl_var_simples
+						| decl_var_simples ',' lista_de_parametros;
+lista_decl_var_local:	decl_var_simples ';' lista_decl_var_local
+						| /* VAZIO */;
+corpo:	bloco_de_comando;
 
 /* Bloco de comandos e comando */
-bloco_de_comando :	  '{' lista_de_comandos '}'
-			| '{' '}';
-lista_de_comandos :	  lista_de_comandos ';' comando
-			| lista_de_comandos ';'
-			| comando;
-comando :	  bloco_de_comando
-		| atribuicao
-		| controle_fluxo
-		| op_entrada
-		| op_saida
-		| op_retorno
-		| chamada_funcao
-		| ';';
+bloco_de_comando:	'{' lista_de_comandos '}'
+					| '{' '}';
+lista_de_comandos:	lista_de_comandos ';' comando
+					| lista_de_comandos ';'
+					| comando;
+comando:	bloco_de_comando
+			| atribuicao
+			| controle_fluxo
+			| op_entrada
+			| op_saida
+			| op_retorno
+			| chamada_funcao
+			| ';';
 
 /* Atribuição, entrada, saída e retorno */
-atribuicao :	  var_simples	'=' expressao
-		| var_vetor	'=' expressao;
-op_entrada :	TK_PR_INPUT var;
-op_saida :	TK_PR_OUTPUT lista_elementos_saida;
-lista_elementos_saida :   TK_LIT_STRING
-			| expressao
-			| TK_LIT_STRING ',' lista_elementos_saida
-			| expressao ',' lista_elementos_saida;
-op_retorno :	TK_PR_RETURN expressao;
+atribuicao:	var_simples	'=' expressao
+			| var_vetor	'=' expressao;
+op_entrada:	TK_PR_INPUT var;
+op_saida:	TK_PR_OUTPUT lista_elementos_saida;
+lista_elementos_saida :	TK_LIT_STRING
+						| expressao
+						| TK_LIT_STRING ',' lista_elementos_saida
+						| expressao ',' lista_elementos_saida;
+op_retorno:	TK_PR_RETURN expressao;
 
 /* Expressões */
 /*
@@ -88,87 +88,87 @@ op_retorno :	TK_PR_RETURN expressao;
 	As expressões de caracteres e inteiras ainda não estão definidas
 */
 
-expressao :	  var
-		| literal
-		| chamada_funcao
-		| '+' expressao
-		| '-' expressao
-		| '!' expressao
-		| '(' expressao ')'
-		| expressao '+' expressao
-		| expressao '-' expressao
-		| expressao '/' expressao
-		| expressao '*' expressao
-		| expressao '<' expressao
-		| expressao '>' expressao
-		| expressao '&' expressao
-		| expressao '|' expressao
-		| expressao TK_OC_LE expressao
-		| expressao TK_OC_GE expressao
-		| expressao TK_OC_EQ expressao
-		| expressao TK_OC_NE expressao
-		| expressao TK_OC_OR expressao
-		| expressao TK_OC_AND expressao;
+expressao:	var
+			| literal
+			| chamada_funcao
+			| '+' expressao
+			| '-' expressao
+			| '!' expressao
+			| '(' expressao ')'
+			| expressao '+' expressao
+			| expressao '-' expressao
+			| expressao '/' expressao
+			| expressao '*' expressao
+			| expressao '<' expressao
+			| expressao '>' expressao
+			| expressao '&' expressao
+			| expressao '|' expressao
+			| expressao TK_OC_LE expressao
+			| expressao TK_OC_GE expressao
+			| expressao TK_OC_EQ expressao
+			| expressao TK_OC_NE expressao
+			| expressao TK_OC_OR expressao
+			| expressao TK_OC_AND expressao;
 
 /*
-expressao_aritmetica: 	  '(' expressao_aritmetica ')'
-			| expressao_aritmetica '+' expressao_aritmetica
-			| expressao_aritmetica '-' expressao_aritmetica
-			| expressao_aritmetica '/' expressao_aritmetica
-			| expressao_aritmetica '*' expressao_aritmetica
-			| var
-			| TK_LIT_INT
-			| TK_LIT_FLOAT
-			| chamada_funcao;
+expressao_aritmetica:	'(' expressao_aritmetica ')'
+						| expressao_aritmetica '+' expressao_aritmetica
+						| expressao_aritmetica '-' expressao_aritmetica
+						| expressao_aritmetica '/' expressao_aritmetica
+						| expressao_aritmetica '*' expressao_aritmetica
+						| var
+						| TK_LIT_INT
+						| TK_LIT_FLOAT
+						| chamada_funcao;
 
-expressao_logica: 	  '(' expressao_logica ')'
-			| expressao_logica TK_OC_AND expressao_logica
-			| expressao_logica TK_OC_OR expressao_logica
-			| var
-			| TK_LIT_FALSE
-			| TK_LIT_TRUE
-			| chamada_funcao
-			| expressao_aritmetica TK_OC_LE expressao_aritmetica
-			| expressao_aritmetica TK_OC_GE expressao_aritmetica
-			| expressao_aritmetica TK_OC_EQ expressao_aritmetica
-			| expressao_aritmetica TK_OC_NE expressao_aritmetica;
+expressao_logica:	'(' expressao_logica ')'
+					| expressao_logica TK_OC_AND expressao_logica
+					| expressao_logica TK_OC_OR expressao_logica
+					| var
+					| TK_LIT_FALSE
+					| TK_LIT_TRUE
+					| chamada_funcao
+					| expressao_aritmetica TK_OC_LE expressao_aritmetica
+					| expressao_aritmetica TK_OC_GE expressao_aritmetica
+					| expressao_aritmetica TK_OC_EQ expressao_aritmetica
+					| expressao_aritmetica TK_OC_NE expressao_aritmetica;
 
-expressao_inteira :	TK_LIT_INT; //Será definida nas próximas etapas
-expressao_caracteres	: TK_LIT_CHAR; //Será definida nas próximas etapas
+expressao_inteira:		TK_LIT_INT; //Será definida nas próximas etapas
+expressao_caracteres:	TK_LIT_CHAR; //Será definida nas próximas etapas
 
 */
 
 /* Chamada de uma função */
-chamada_funcao :	  TK_IDENTIFICADOR '(' lista_de_argumentos ')'
-			| TK_IDENTIFICADOR '(' /* VAZIO */ ')';
-lista_de_argumentos :	  expressao ',' lista_de_argumentos
-			| expressao;
+chamada_funcao:		TK_IDENTIFICADOR '(' lista_de_argumentos ')'
+					| TK_IDENTIFICADOR '(' /* VAZIO */ ')';
+lista_de_argumentos:	expressao ',' lista_de_argumentos
+						| expressao;
 
 /* Controle de fluxo */
-controle_fluxo:	  TK_PR_IF	'(' expressao ')' TK_PR_THEN	comando
-		| TK_PR_IF	'(' expressao ')' TK_PR_THEN	comando TK_PR_ELSE comando
-		| TK_PR_WHILE	'(' expressao ')' TK_PR_DO	comando
-		| TK_PR_DO	comando		  TK_PR_WHILE	'(' expressao ')';
+controle_fluxo:	TK_PR_IF		'(' expressao ')'	TK_PR_THEN	comando
+				| TK_PR_IF		'(' expressao ')'	TK_PR_THEN	comando TK_PR_ELSE comando
+				| TK_PR_WHILE	'(' expressao ')'	TK_PR_DO	comando
+				| TK_PR_DO		comando				TK_PR_WHILE	'(' expressao ')';
 
 /* Literais */
-literal :	  TK_LIT_FALSE
-		| TK_LIT_TRUE
-		| TK_LIT_INT
-		| TK_LIT_FLOAT
-		| TK_LIT_CHAR
-		| TK_LIT_STRING;
+literal:	TK_LIT_FALSE
+			| TK_LIT_TRUE
+			| TK_LIT_INT
+			| TK_LIT_FLOAT
+			| TK_LIT_CHAR
+			| TK_LIT_STRING;
 
 /* Variáveis */
-var :	  var_simples
-	| var_vetor;
-var_simples :	TK_IDENTIFICADOR;
-var_vetor :	TK_IDENTIFICADOR '[' expressao ']';
+var:	var_simples
+		| var_vetor;
+var_simples:	TK_IDENTIFICADOR;
+var_vetor:		TK_IDENTIFICADOR '[' expressao ']';
 
 /* Tipos */
-tipo :	  TK_PR_INT
-	| TK_PR_FLOAT
-	| TK_PR_CHAR
-	| TK_PR_BOOL
-	| TK_PR_STRING;
+tipo:	TK_PR_INT
+		| TK_PR_FLOAT
+		| TK_PR_CHAR
+		| TK_PR_BOOL
+		| TK_PR_STRING;
 
 %%
