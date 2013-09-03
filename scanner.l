@@ -39,7 +39,7 @@ input { return TK_PR_INPUT; }
 output { return TK_PR_OUTPUT; }
 return { return TK_PR_RETURN; }
 
-","|";"|":"|"("|")"|"["|"]"|"{"|"}"|"+"|"-"|"*"|"/"|"<"|">"|"="|"!"|"&"|"$" { return yytext[0]; }
+","|";"|":"|"("|")"|"["|"]"|"{"|"}"|"+"|"-"|"*"|"/"|"<"|">"|"="|"!"|"|"|"&"|"$" { return yytext[0]; }
 
 "<""=" { return TK_OC_LE; }
 ">""=" { return TK_OC_GE; }
@@ -48,7 +48,7 @@ return { return TK_PR_RETURN; }
 "&""&" { return TK_OC_AND; }
 "|""|" { return TK_OC_OR; }
 
-("-")?{DIGITO}+ { insereLexema(IKS_SIMBOLO_LITERAL_INT); return TK_LIT_INT; }
+{DIGITO}+ { insereLexema(IKS_SIMBOLO_LITERAL_INT); return TK_LIT_INT; }
 ("-")?{DIGITO}+"."{DIGITO}+ { insereLexema(IKS_SIMBOLO_LITERAL_FLOAT); return TK_LIT_FLOAT; }
 false { insereLexema(IKS_SIMBOLO_LITERAL_BOOL); return TK_LIT_FALSE; }
 true { insereLexema(IKS_SIMBOLO_LITERAL_BOOL); return TK_LIT_TRUE; }
