@@ -38,36 +38,38 @@ comp_dict_item_t *searchKey (comp_dict_t dict, char *key) {
 }
 
 /* Insert key (if it doesnt exist) with its associated value */
-int insertKey (comp_dict_t *dict, char *key, int value, int type) {
-	if (searchKey(*dict, key) != NULL)
-		return 1;//key already exists
+comp_dict_item_t *insertKey (comp_dict_t *dict, char *key, int type, int line) {
+	if (searchKey(*dict, key) != NULL){
+		return NULL;//key already exists
+	}
 
 	comp_dict_node_t *newNode;
 	unsigned int hashValue = hashFunction(dict->numberOfLists, key);
 
 	newNode = malloc(sizeof(comp_dict_node_t));
-	if (newNode == NULL) return 2;//couldnt alloc
+	if (newNode == NULL) return NULL;//couldnt alloc
 	newNode->item = malloc(sizeof(comp_dict_item_t));
-	if (newNode->item == NULL) return 3;//couldnt alloc
+	if (newNode->item == NULL) return NULL;//couldnt alloc
 
 	newNode->item->key = strdup(key);
-	newNode->item->value = value;
 	newNode->item->type = type;
+	newNode->item->floatValue = 0;
+	newNode->item->line = line;
 	newNode->next = dict->table[hashValue];
 	dict->table[hashValue] = newNode;
 	dict->numberOfElements++;
-	return 0;
+	return newNode->item;
 }
 
 /* Updates the value associated with the key */
-int updateKey (comp_dict_t dict, char *key, int newValue) {
+int updateKey (comp_dict_t dict, char *key, int newType) {
 	comp_dict_node_t *node;
 	unsigned int hashValue = hashFunction(dict.numberOfLists, key);
 
 	int existingKey = 0;
 	for (node = dict.table[hashValue]; node != NULL; node = node->next)
 		if (strcmp(key, node->item->key) == 0) {
-			node->item->value = newValue;
+			node->item->type = newType;
 			existingKey = 1;
 			break;
 		}
@@ -86,6 +88,8 @@ int deleteKey (comp_dict_t *dict, char *key) {
 	if (strcmp(key, node->item->key) == 0) {
 		tempNode = node;
 		dict->table[hashValue] = node->next;
+		free(tempNode->item->key);
+		free(tempNode->item);
 		free(tempNode);
 		dict->numberOfElements--;
 		return 0;
@@ -95,6 +99,8 @@ int deleteKey (comp_dict_t *dict, char *key) {
 		if (strcmp(key, node->next->item->key) == 0) {
 			tempNode = node->next;
 			node->next = node->next->next;
+			free(tempNode->item->key);
+			free(tempNode->item);
 			free(tempNode);
 			dict->numberOfElements--;
 			return;
@@ -152,7 +158,17 @@ void printDictionary (comp_dict_t dict) {
 
 		int counter = 0;
 		while (node != NULL) {
-			printf("\tnode %d: %s -> (%d, %d)\n", counter, node->item->key, node->item->value, node->item->type);
+			printf("\tnode %d: %s -> (line: %d, type: ", counter, node->item->key, node->item->line);
+			switch(node->item->type){
+				case IKS_SIMBOLO_INT: printf("int, value: %d)\n", node->item->intValue); break;
+				case IKS_SIMBOLO_FLOAT: printf("float, value: %f)\n", node->item->floatValue); break;
+				case IKS_SIMBOLO_CHAR: printf("char, value: %c)\n", node->item->charValue); break;
+				case IKS_SIMBOLO_STRING: printf("string, value: %s)\n", node->item->stringValue); break;
+				case IKS_SIMBOLO_BOOL: printf("bool, value: %d)\n", node->item->boolValue); break;
+				case IKS_SIMBOLO_IDENTIFICADOR: printf("identificador)\n"); break;
+				case IKS_SIMBOLO_INDEFINIDO: printf("indefinido)\n"); break;
+				default: printf("outro)\n"); break;
+			}
 			node = node->next;
 			counter++;
 		}
