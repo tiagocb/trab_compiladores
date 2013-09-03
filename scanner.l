@@ -49,7 +49,7 @@ return	{ return TK_PR_RETURN; }
 "&""&" { return TK_OC_AND; }
 
 {DIGITO}+							{ insereLexema(IKS_SIMBOLO_LITERAL_INT); return TK_LIT_INT; }
-("-")?{DIGITO}+"."{DIGITO}+			{ insereLexema(IKS_SIMBOLO_LITERAL_FLOAT); return TK_LIT_FLOAT; }
+{DIGITO}+"."{DIGITO}+				{ insereLexema(IKS_SIMBOLO_LITERAL_FLOAT); return TK_LIT_FLOAT; }
 false								{ insereLexema(IKS_SIMBOLO_LITERAL_BOOL); return TK_LIT_FALSE; }
 true								{ insereLexema(IKS_SIMBOLO_LITERAL_BOOL); return TK_LIT_TRUE; }
 ("'")([^\n])("'")					{ insereLexema(IKS_SIMBOLO_LITERAL_CHAR); return TK_LIT_CHAR; }
@@ -60,7 +60,7 @@ true								{ insereLexema(IKS_SIMBOLO_LITERAL_BOOL); return TK_LIT_TRUE; }
 "/""/"[^\n]* { } //comentarios comecando por //
 
 "/""*" { BEGIN(IN_COMMENT); }	//comentarios do tipo /*...*/
-<IN_COMMENT> {
+<IN_COMMENT>{
 	"*""/"		{ BEGIN(INITIAL); }
 	[^"*"\n]+	{ } // eat comment in chunks
 	"*"			{ } // eat the lone star
