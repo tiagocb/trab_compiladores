@@ -5,12 +5,11 @@
 #include "comp_tree.h"
 #include "comp_graph.h"
 
-#define IKS_SYNTAX_SUCESSO 0
-#define IKS_SYNTAX_ERRO 1
+#define IKS_SYNTAX_SUCESSO		0
+#define IKS_SYNTAX_ERRO			1
 
 void yyerror (char const *mensagem) {
 	fprintf(stderr, "%s. Line %d\n", mensagem, obtemLinhaAtual());
-	exit(IKS_SYNTAX_ERRO);
 }
 
 int main (int argc, char **argv) {
@@ -25,9 +24,19 @@ int main (int argc, char **argv) {
 	 * outras em breve
 	 */
 
-	int resultado = yyparse();
+	switch ( yyparse() ) {
+		default:
+		case 0: // SUCCESS parsing
+			//imprimeTabelaDeSimbolos(); //Verás os identificadores e literais do código compilado
+			exit(IKS_SYNTAX_SUCESSO);
+		break;
 
-	//imprimeTabelaDeSimbolos(); //Verás os identificadores e literais do código compilado
+		case 1: // ERROR: input is incorrect and error recovery is impossible
+			exit(IKS_SYNTAX_ERRO);
+		break;
 
-	exit(IKS_SYNTAX_SUCESSO);
+		case 2: // ERROR: memory exhaustion
+			exit(IKS_SYNTAX_ERRO);
+		break;
+	}
 }

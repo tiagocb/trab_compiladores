@@ -76,7 +76,7 @@ atribuicao:	var_simples	'=' expressao
 			| var_vetor	'=' expressao;
 op_entrada:	TK_PR_INPUT var;
 op_saida:	TK_PR_OUTPUT lista_elementos_saida;
-lista_elementos_saida :	TK_LIT_STRING
+lista_elementos_saida:	TK_LIT_STRING
 						| expressao
 						| TK_LIT_STRING ',' lista_elementos_saida
 						| expressao ',' lista_elementos_saida;
