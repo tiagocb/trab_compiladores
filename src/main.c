@@ -4,39 +4,56 @@
 #include "comp_list.h"
 #include "comp_tree.h"
 #include "comp_graph.h"
+#include "main.h"
 
-#define IKS_SYNTAX_SUCESSO		0
-#define IKS_SYNTAX_ERRO			1
+void generateASTFile(comp_tree_t *ast);
 
 void yyerror (char const *mensagem) {
 	fprintf(stderr, "%s. Line %d\n", mensagem, obtemLinhaAtual());
 }
 
 int main (int argc, char **argv) {
-	inicializaTabelaDeSimbolos();
-	/* A tabela de símbolos está definida em scanner.l.
-	 * Ela associa uma string a dois inteiros (lexema, linha que foi encontrado e tipo do lexema).
-	 * Na tabela de símbolos as strings devem ser únicas portando não há mais que uma ocorrência de um literal ou identificador.
-	 *
-	 * As operações sobre a tabela de símbolos são feitas pelas seguintes funções definidas em scanner.l
-	 * void inicializaTabelaDeSimbolos();
-	 * void imprimeTabelaDeSimbolos(); //cuidado, muita informacao sera imprimida
-	 * outras em breve
-	 */
+	createDictionaty(&tabelaDeSimbolos, 10);//Cria tabela de símbolos
 
-	switch ( yyparse() ) {
+	int resultado =  yyparse();
+
+	//printDictionary(tabelaDeSimbolos);
+	//printTree(ast);
+
+	switch(resultado){
 		default:
 		case 0: // SUCCESS parsing
-			//imprimeTabelaDeSimbolos(); //Verás os identificadores e literais do código compilado
-			exit(IKS_SYNTAX_SUCESSO);
-		break;
 
+			gv_init(NULL);
+			generateASTFile(ast);
+			gv_close();
+
+			exit(IKS_SYNTAX_SUCESSO); break;
 		case 1: // ERROR: input is incorrect and error recovery is impossible
-			exit(IKS_SYNTAX_ERRO);
-		break;
-
+			exit(IKS_SYNTAX_ERRO); break;
 		case 2: // ERROR: memory exhaustion
-			exit(IKS_SYNTAX_ERRO);
-		break;
+			exit(IKS_SYNTAX_ERRO); break;
 	}
 }
+
+void generateASTFile(comp_tree_t *ast){
+	if(ast == NULL) return;
+
+	comp_tree_t *ptAux = ast;
+
+	while (ptAux != NULL) {
+		if(ptAux->value == IKS_AST_FUNCAO || ptAux->value == IKS_AST_IDENTIFICADOR || ptAux->value == IKS_AST_LITERAL)
+			gv_declare(ptAux->value, ptAux, ptAux->dictPointer->key);
+		else
+			gv_declare(ptAux->value, ptAux, NULL);
+
+		if(ptAux->parent != NULL) gv_connect(ptAux->parent, ptAux);
+
+		generateASTFile(ptAux->child);
+
+		ptAux = ptAux->brother;
+	}
+
+	return;
+}
+

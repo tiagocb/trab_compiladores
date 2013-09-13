@@ -1,0 +1,22 @@
+int: vector[100];
+
+int: bubbleSort(int : n)
+int: iterationCounter;
+int: currentPosition;
+int: tmp; 
+{
+	iterationCounter = 0;
+	while(iterationCounter < 100) do{
+		currentPosition = 0;
+
+		while(currentPosition < 99) do{
+			if(vector[currentPosition + 1] < vector[currentPosition]) then{
+				tmp = vector[currentPosition];
+				vector[currentPosition] = vector[currentPosition + 1];
+				vector[currentPosition + 1] = tmp;
+			}
+		};
+
+		iterationCounter = iterationCounter + 1;
+	}
+}

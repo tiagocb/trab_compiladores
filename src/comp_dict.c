@@ -3,7 +3,6 @@
 #include <string.h>
 #include "comp_dict.h"
 
-/* Create a new dictionary with a given number of lists */
 int createDictionaty (comp_dict_t *dict, int numberOfLists) {
 	if (numberOfLists < 1) return 1;//invalid list number
 	dict->numberOfLists = numberOfLists;
@@ -25,7 +24,6 @@ unsigned int hashFunction (int numberOfLists, char *key) {
 	return hashValue % numberOfLists;
 }
 
-/* Search for a key in the dictionary and returns the item if it was found */
 comp_dict_item_t *searchKey (comp_dict_t dict, char *key) {
 	comp_dict_node_t *node;
 	unsigned int hashValue = hashFunction(dict.numberOfLists, key);
@@ -37,10 +35,16 @@ comp_dict_item_t *searchKey (comp_dict_t dict, char *key) {
 	return NULL;
 }
 
-/* Insert key (if it doesnt exist) with its associated value */
 comp_dict_item_t *insertKey (comp_dict_t *dict, char *key, int type, int line) {
-	if (searchKey(*dict, key) != NULL){
-		return NULL;//key already exists
+	if(key[0] == '"'){ //é uma string
+		key[strlen(key) - 1] = '\0';
+		key = key + 1;
+	}
+	
+	comp_dict_item_t *item;
+	item = searchKey(*dict, key);
+	if (item != NULL){
+		return item;//key already exists
 	}
 
 	comp_dict_node_t *newNode;
@@ -165,7 +169,6 @@ void printDictionary (comp_dict_t dict) {
 				case IKS_SIMBOLO_CHAR: printf("char, value: %c)\n", node->item->charValue); break;
 				case IKS_SIMBOLO_STRING: printf("string, value: %s)\n", node->item->stringValue); break;
 				case IKS_SIMBOLO_BOOL: printf("bool, value: %d)\n", node->item->boolValue); break;
-				case IKS_SIMBOLO_IDENTIFICADOR: printf("identificador)\n"); break;
 				case IKS_SIMBOLO_INDEFINIDO: printf("indefinido)\n"); break;
 				default: printf("outro)\n"); break;
 			}

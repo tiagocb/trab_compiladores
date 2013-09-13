@@ -87,6 +87,21 @@ comp_tree_t *getKeyNode (comp_tree_t *tree, int key) {
 	return NULL;
 }
 
+int countChild (comp_tree_t *tree, int key) {
+	comp_tree_t *node = getKeyNode(tree, key);
+	if (node == NULL) return -1;
+	if (node->child == NULL) return 0;
+
+	int counter = 0;
+	comp_tree_t *child = node->child;
+	while(child != NULL){
+		child = child->brother;
+		counter++;
+	}
+
+	return counter;
+}
+
 /* Check if tree contains key */
 int containsKey (comp_tree_t *tree, int key) {
 	if (tree == NULL) return 0;
@@ -202,12 +217,49 @@ int removeTreeNode (comp_tree_t **tree, int keyNode) {
 
 /* Print tree */
 void printTree (comp_tree_t *tree) {
-	if (isTreeEmpty(tree)) return;
+	if (isTreeEmpty(tree)){
+		return;
+	}
 
 	comp_tree_t *ptAux = tree;
 	while (ptAux != NULL) {
-		printf("%d ", ptAux->key);
+		printf("%d ", ptAux->value);
 		printTree(ptAux->child);
 		ptAux = ptAux->brother;
 	}
 }
+
+void appendOnChildPointer(comp_tree_t *root, comp_tree_t *tree){
+	if(tree == NULL) return;
+
+	comp_tree_t *child = root->child;
+	if(child == NULL){
+		root->child = tree;
+	}else{
+		while(child->brother != NULL) child = child->brother;
+		child->brother = tree;
+	}
+
+	comp_tree_t *newChild = tree;
+	while(newChild != NULL){
+		newChild->parent = root;
+		newChild = newChild->brother;
+	}
+}
+
+void appendOnBrotherPointer(comp_tree_t *root, comp_tree_t *tree){
+	if(tree == NULL) return;
+
+	comp_tree_t *brother = root->brother;
+	if(brother == NULL){
+		root->brother = tree;
+	}else{
+		while(brother->brother != NULL) brother = brother->brother;
+		brother->brother = tree;
+	}
+}
+
+
+
+
+

@@ -1,17 +1,33 @@
-TRABALHO DE COMPILADORES
+TRABALHO DE COMPILADORES 2013/2
 
-Para copia do repositório:
-$ git clone https://github.org/tiagocb/trab_compiladores.git
-$ cd trab_compiladores
+####################################
+PARA COMPILAR:
 
-Para compilar: (Se você tiver instalado o flex e o bison, a compilação deve ocorrer normalmente)
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make
+	-> Instale flex e bison
+	$ mkdir build
+	$ cd build
+	$ cmake ..
+	$ make
 
--------------------------------
+####################################
+PROGRAMAS IKS PARA TESTES:
 
-Exemplo de código para testes: 
-	- teste1.txt (originalmente criado para testar a gramática da linguagem)
+	\programas
+		bubble_sort.txt
+		fatorial.txt
+		grammar.txt
 
+####################################
+PARA ATUALIZAR PÁGINAS DE DOCUMENTAÇÃO APÓS DOCUMENTAR O FONTE:
+	
+	$ cd doc
+	$ doxygen
+
+####################################
+PARA GERAR AST DE PROGRAMA IKS:
+
+	$ cd build
+	$ ./main < ../programas/<nome_programa>.txt 2> ast.dot
+		$ dot ast.dot -tpng -o ast.png 
+	OU
+		$ dot ast.dot -Teps -o ast.eps 

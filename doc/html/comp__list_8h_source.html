@@ -1,0 +1,129 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=9"/>
+<meta name="generator" content="Doxygen 1.8.5"/>
+<title>Compilador IKS: Código-Fonte de /home/tiago/compiladores/tmp/trab_compiladores/include/comp_list.h</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { searchBox.OnSelectItem(0); });
+</script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr style="height: 56px;">
+  <td style="padding-left: 0.5em;">
+   <div id="projectname">Compilador IKS
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- Gerado por Doxygen 1.8.5 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Busca');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>Página&#160;Principal</span></a></li>
+      <li><a href="annotated.html"><span>Classes</span></a></li>
+      <li class="current"><a href="files.html"><span>Arquivos</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="Busca" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>Lista&#160;de&#160;Arquivos</span></a></li>
+      <li><a href="globals.html"><span>Arquivos&#160;Membros</span></a></li>
+    </ul>
+  </div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>Todos</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Arquivos</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Funções</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Variáveis</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Definições de Tipos</a></div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle">
+<div class="title">comp_list.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<a href="comp__list_8h.html">Vá para a documentação deste arquivo.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#ifndef _COMP_LIST_H</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor"></span><span class="preprocessor">#define _COMP_LIST_H</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor"></span></div>
+<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="struct__comp__list__node.html">   16</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct__comp__list__node.html">_comp_list_node</a> {</div>
+<div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="struct__comp__list__node.html#a5275f2972f5bba3d45feb803ccdd04d7">   17</a></span>&#160;    <span class="keywordtype">int</span> <a class="code" href="struct__comp__list__node.html#a5275f2972f5bba3d45feb803ccdd04d7">value</a>;          </div>
+<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="struct__comp__list__node.html#ade30741e11cd76365a1b9d5b9ce2fa74">   18</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="struct__comp__list__node.html">_comp_list_node</a> *<a class="code" href="struct__comp__list__node.html#ade30741e11cd76365a1b9d5b9ce2fa74">next</a>;   </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;} <a class="code" href="comp__list_8h.html#aed208b605c25b4854c92e30617732ad0">comp_list_t</a>;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keywordtype">void</span> <a class="code" href="comp__list_8h.html#a3261fc80ff371b7559799b81ac5fd3bd">createList</a>(<a class="code" href="struct__comp__list__node.html">comp_list_t</a> **list);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keywordtype">void</span> <a class="code" href="comp__list_8h.html#afff79a81117296fca9b5a3261b9e0890">clearList</a>(<a class="code" href="struct__comp__list__node.html">comp_list_t</a> **list);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keywordtype">void</span> <a class="code" href="comp__list_8h.html#a43d3e00755d49ac99581455c38059c30">printList</a>(<a class="code" href="struct__comp__list__node.html">comp_list_t</a> *list);</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__list_8h.html#ada7427ef700414e583eb6abd730a85e3">insertTail</a>(<a class="code" href="struct__comp__list__node.html">comp_list_t</a> **list, <span class="keywordtype">int</span> <a class="code" href="struct__comp__list__node.html#a5275f2972f5bba3d45feb803ccdd04d7">value</a>);</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keywordtype">int</span> <span class="keyword">delete</span>(<a class="code" href="struct__comp__list__node.html">comp_list_t</a> **list, <span class="keywordtype">int</span> position);</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__list_8h.html#a1fcc794ceaff8fdb1abee850821a7452">getFirst</a>(<a class="code" href="struct__comp__list__node.html">comp_list_t</a> *list);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__list_8h.html#a01740ed55572de0bc27da92988bd7c1e">isListEmpty</a>(<a class="code" href="struct__comp__list__node.html">comp_list_t</a> *list);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__list_8h.html#a9735dc2e6459c89c0ac9ce193b9f55b7">update</a>(<a class="code" href="struct__comp__list__node.html">comp_list_t</a> *list, <span class="keywordtype">int</span> position, <span class="keywordtype">int</span> newValue);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="ttc" id="comp__list_8h_html_afff79a81117296fca9b5a3261b9e0890"><div class="ttname"><a href="comp__list_8h.html#afff79a81117296fca9b5a3261b9e0890">clearList</a></div><div class="ttdeci">void clearList(comp_list_t **list)</div><div class="ttdoc">Limpa a lista, libera toda a memÃ³ria associada a lista. </div><div class="ttdef"><b>Definition:</b> comp_list.c:100</div></div>
+<div class="ttc" id="comp__list_8h_html_a9735dc2e6459c89c0ac9ce193b9f55b7"><div class="ttname"><a href="comp__list_8h.html#a9735dc2e6459c89c0ac9ce193b9f55b7">update</a></div><div class="ttdeci">int update(comp_list_t *list, int position, int newValue)</div><div class="ttdoc">Atualiza o valor associado de um elemento da lista dado a sua posiÃ§Ã£o. Retorna 1 se a operaÃ§Ã£o fo...</div><div class="ttdef"><b>Definition:</b> comp_list.c:79</div></div>
+<div class="ttc" id="comp__list_8h_html_a1fcc794ceaff8fdb1abee850821a7452"><div class="ttname"><a href="comp__list_8h.html#a1fcc794ceaff8fdb1abee850821a7452">getFirst</a></div><div class="ttdeci">int getFirst(comp_list_t *list)</div><div class="ttdoc">Retorna o valor associado do primeiro elemento da lista. </div><div class="ttdef"><b>Definition:</b> comp_list.c:68</div></div>
+<div class="ttc" id="comp__list_8h_html_a01740ed55572de0bc27da92988bd7c1e"><div class="ttname"><a href="comp__list_8h.html#a01740ed55572de0bc27da92988bd7c1e">isListEmpty</a></div><div class="ttdeci">int isListEmpty(comp_list_t *list)</div><div class="ttdoc">Testa se a lista estÃ¡ vazia (nÃ£o contÃ©m nenhum elemento) </div><div class="ttdef"><b>Definition:</b> comp_list.c:74</div></div>
+<div class="ttc" id="comp__list_8h_html_ada7427ef700414e583eb6abd730a85e3"><div class="ttname"><a href="comp__list_8h.html#ada7427ef700414e583eb6abd730a85e3">insertTail</a></div><div class="ttdeci">int insertTail(comp_list_t **list, int value)</div><div class="ttdoc">Insere um elemento no fim da lista. Retorna 1 se a operaÃ§Ã£o foi bem sucedida e 0 caso contrÃ¡rio...</div><div class="ttdef"><b>Definition:</b> comp_list.c:11</div></div>
+<div class="ttc" id="comp__list_8h_html_a3261fc80ff371b7559799b81ac5fd3bd"><div class="ttname"><a href="comp__list_8h.html#a3261fc80ff371b7559799b81ac5fd3bd">createList</a></div><div class="ttdeci">void createList(comp_list_t **list)</div><div class="ttdoc">Cria uma lista. </div><div class="ttdef"><b>Definition:</b> comp_list.c:6</div></div>
+<div class="ttc" id="struct__comp__list__node_html"><div class="ttname"><a href="struct__comp__list__node.html">_comp_list_node</a></div><div class="ttdoc">Estrutura da lista encadeada. </div><div class="ttdef"><b>Definition:</b> comp_list.h:16</div></div>
+<div class="ttc" id="comp__list_8h_html_a43d3e00755d49ac99581455c38059c30"><div class="ttname"><a href="comp__list_8h.html#a43d3e00755d49ac99581455c38059c30">printList</a></div><div class="ttdeci">void printList(comp_list_t *list)</div><div class="ttdoc">Imprime a lista. </div><div class="ttdef"><b>Definition:</b> comp_list.c:111</div></div>
+<div class="ttc" id="struct__comp__list__node_html_ade30741e11cd76365a1b9d5b9ce2fa74"><div class="ttname"><a href="struct__comp__list__node.html#ade30741e11cd76365a1b9d5b9ce2fa74">_comp_list_node::next</a></div><div class="ttdeci">struct _comp_list_node * next</div><div class="ttdef"><b>Definition:</b> comp_list.h:18</div></div>
+<div class="ttc" id="comp__list_8h_html_aed208b605c25b4854c92e30617732ad0"><div class="ttname"><a href="comp__list_8h.html#aed208b605c25b4854c92e30617732ad0">comp_list_t</a></div><div class="ttdeci">struct _comp_list_node comp_list_t</div><div class="ttdoc">Estrutura da lista encadeada. </div></div>
+<div class="ttc" id="struct__comp__list__node_html_a5275f2972f5bba3d45feb803ccdd04d7"><div class="ttname"><a href="struct__comp__list__node.html#a5275f2972f5bba3d45feb803ccdd04d7">_comp_list_node::value</a></div><div class="ttdeci">int value</div><div class="ttdef"><b>Definition:</b> comp_list.h:17</div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+Gerado em Sexta, 13 de Setembro de 2013 17:38:04 para Compilador IKS por &#160;<a href="http://www.doxygen.org/index.html">
+<img class="footer" src="doxygen.png" alt="doxygen"/>
+</a> 1.8.5
+</small></address>
+</body>
+</html>

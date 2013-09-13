@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=9"/>
+<meta name="generator" content="Doxygen 1.8.5"/>
+<title>Compilador IKS: Código-Fonte de /home/tiago/compiladores/tmp/trab_compiladores/include/comp_tree.h</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { searchBox.OnSelectItem(0); });
+</script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr style="height: 56px;">
+  <td style="padding-left: 0.5em;">
+   <div id="projectname">Compilador IKS
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- Gerado por Doxygen 1.8.5 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Busca');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>Página&#160;Principal</span></a></li>
+      <li><a href="annotated.html"><span>Classes</span></a></li>
+      <li class="current"><a href="files.html"><span>Arquivos</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="Busca" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>Lista&#160;de&#160;Arquivos</span></a></li>
+      <li><a href="globals.html"><span>Arquivos&#160;Membros</span></a></li>
+    </ul>
+  </div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>Todos</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Arquivos</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Funções</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Variáveis</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Definições de Tipos</a></div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle">
+<div class="title">comp_tree.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<a href="comp__tree_8h.html">Vá para a documentação deste arquivo.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#ifndef _COMP_TREE_H</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor"></span><span class="preprocessor">#define _COMP_TREE_H</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor"></span><span class="preprocessor">#include &quot;<a class="code" href="comp__dict_8h.html">comp_dict.h</a>&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
+<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="struct__comp__tree__t.html">   18</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct__comp__tree__t.html">_comp_tree_t</a> {</div>
+<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="struct__comp__tree__t.html#aa31ddd720fc5723bf2d644ddeddb7a24">   19</a></span>&#160;    <span class="keywordtype">int</span> <a class="code" href="struct__comp__tree__t.html#aa31ddd720fc5723bf2d644ddeddb7a24">key</a>;            </div>
+<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="struct__comp__tree__t.html#a798e6075f7c1d51c060d00b302ece217">   20</a></span>&#160;    <span class="keywordtype">int</span> <a class="code" href="struct__comp__tree__t.html#a798e6075f7c1d51c060d00b302ece217">value</a>;          </div>
+<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="struct__comp__tree__t.html#a3b115d082b745f36f462386681cc14be">   21</a></span>&#160;    <a class="code" href="structcomp__dict__item__t.html">comp_dict_item_t</a> *<a class="code" href="struct__comp__tree__t.html#a3b115d082b745f36f462386681cc14be">dictPointer</a>;  </div>
+<div class="line"><a name="l00022"></a><span class="lineno"><a class="line" href="struct__comp__tree__t.html#a5973c4e21dc82002abe0f9ed4675c9b8">   22</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="struct__comp__tree__t.html">_comp_tree_t</a> *<a class="code" href="struct__comp__tree__t.html#a5973c4e21dc82002abe0f9ed4675c9b8">parent</a>;    </div>
+<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="struct__comp__tree__t.html#ac10ee94f3835993e05f629e6adf84a28">   23</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="struct__comp__tree__t.html">_comp_tree_t</a> *<a class="code" href="struct__comp__tree__t.html#ac10ee94f3835993e05f629e6adf84a28">brother</a>;   </div>
+<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="struct__comp__tree__t.html#ae9b2a6bcff86e6835227a58226bf3ab4">   24</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="struct__comp__tree__t.html">_comp_tree_t</a> *<a class="code" href="struct__comp__tree__t.html#ae9b2a6bcff86e6835227a58226bf3ab4">child</a>; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;} <a class="code" href="comp__tree_8h.html#ac17c9d89eadff189c78faac236d5cdc6">comp_tree_t</a>;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *<a class="code" href="comp__tree_8h.html#abff06c334cf09986c5a300bc3d967d6a">getKeyNode</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree, <span class="keywordtype">int</span> <a class="code" href="struct__comp__tree__t.html#aa31ddd720fc5723bf2d644ddeddb7a24">key</a>);</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keywordtype">void</span> <a class="code" href="comp__tree_8h.html#abf33fe80c3dff219bf478a537427f1ab">createTree</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> **tree);</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keywordtype">void</span> <a class="code" href="comp__tree_8h.html#a567137a0cc7d01c98ceeda4d215e8c66">printTree</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keywordtype">void</span> <a class="code" href="comp__tree_8h.html#a92d3cddde69018c00cdede187e0f2893">destroyTree</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> **tree);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#ab4e410776278d6989f34bd998dad6d6e">countTreeNodes</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#a6e5a7d1233e0318c6d43d4867dcc4645">containsValue</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree, <span class="keywordtype">int</span> <a class="code" href="struct__comp__tree__t.html#a798e6075f7c1d51c060d00b302ece217">value</a>);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#a2568485173d567acf531e70985054bb8">countLeafs</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#ac8ca95f20405efc9b2838e602baa7355">countDepth</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#ae5080a28192ecffef8b5ce8460e4a423">isTreeEmpty</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#aa243bd09d4ade35fbaa66e96154b6bdb">countChild</a> (<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree, <span class="keywordtype">int</span> <a class="code" href="struct__comp__tree__t.html#aa31ddd720fc5723bf2d644ddeddb7a24">key</a>);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#aaca2d4ffb93aeef61e43012a0d347b1f">containsKey</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree, <span class="keywordtype">int</span> <a class="code" href="struct__comp__tree__t.html#aa31ddd720fc5723bf2d644ddeddb7a24">key</a>);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#a12b24e3f1176516c16c7df95c055cda0">insert</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> **tree, <span class="keywordtype">int</span> <a class="code" href="struct__comp__tree__t.html#a798e6075f7c1d51c060d00b302ece217">value</a>, <span class="keywordtype">int</span> <a class="code" href="struct__comp__tree__t.html#aa31ddd720fc5723bf2d644ddeddb7a24">key</a>, <span class="keywordtype">int</span> parentKey);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#acaeb92d32055d5a4b37acb7c866f2a03">updateValue</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree, <span class="keywordtype">int</span> <a class="code" href="struct__comp__tree__t.html#aa31ddd720fc5723bf2d644ddeddb7a24">key</a>, <span class="keywordtype">int</span> newValue);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keywordtype">int</span> <a class="code" href="comp__tree_8h.html#a42c47243e8b92bce2d1407f4ad79d96f">removeTreeNode</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> **tree, <span class="keywordtype">int</span> keyNode);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keywordtype">void</span> <a class="code" href="comp__tree_8h.html#a65aba7723b3431a1d6061734b4965f83">appendOnChildPointer</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *root, <a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keywordtype">void</span> <a class="code" href="comp__tree_8h.html#ab9f23f1a418cd6a7f4630c52b463842b">appendOnBrotherPointer</a>(<a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *root, <a class="code" href="struct__comp__tree__t.html">comp_tree_t</a> *tree);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="ttc" id="comp__tree_8h_html_aaca2d4ffb93aeef61e43012a0d347b1f"><div class="ttname"><a href="comp__tree_8h.html#aaca2d4ffb93aeef61e43012a0d347b1f">containsKey</a></div><div class="ttdeci">int containsKey(comp_tree_t *tree, int key)</div><div class="ttdoc">Testa se a Ã¡rvore possui um nÃ³ com a chave especificada. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:106</div></div>
+<div class="ttc" id="structcomp__dict__item__t_html"><div class="ttname"><a href="structcomp__dict__item__t.html">comp_dict_item_t</a></div><div class="ttdoc">Estrutura do item da tabela de símbolos. </div><div class="ttdef"><b>Definition:</b> comp_dict.h:25</div></div>
+<div class="ttc" id="comp__tree_8h_html_a42c47243e8b92bce2d1407f4ad79d96f"><div class="ttname"><a href="comp__tree_8h.html#a42c47243e8b92bce2d1407f4ad79d96f">removeTreeNode</a></div><div class="ttdeci">int removeTreeNode(comp_tree_t **tree, int keyNode)</div><div class="ttdoc">Remove um nÃ³ da Ã¡rvore dado a sua chave, os filhos deste nÃ³ tambÃ©m sÃ£o removidos. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:196</div></div>
+<div class="ttc" id="comp__tree_8h_html_a12b24e3f1176516c16c7df95c055cda0"><div class="ttname"><a href="comp__tree_8h.html#a12b24e3f1176516c16c7df95c055cda0">insert</a></div><div class="ttdeci">int insert(comp_tree_t **tree, int value, int key, int parentKey)</div><div class="ttdoc">Dado uma chave, insere um novo nÃ³ que serÃ¡ filho do nÃ³ com a chave especificada. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:122</div></div>
+<div class="ttc" id="struct__comp__tree__t_html"><div class="ttname"><a href="struct__comp__tree__t.html">_comp_tree_t</a></div><div class="ttdoc">Estrutura da Ã¡rvore. </div><div class="ttdef"><b>Definition:</b> comp_tree.h:18</div></div>
+<div class="ttc" id="comp__tree_8h_html_ac17c9d89eadff189c78faac236d5cdc6"><div class="ttname"><a href="comp__tree_8h.html#ac17c9d89eadff189c78faac236d5cdc6">comp_tree_t</a></div><div class="ttdeci">struct _comp_tree_t comp_tree_t</div><div class="ttdoc">Estrutura da Ã¡rvore. </div></div>
+<div class="ttc" id="struct__comp__tree__t_html_a5973c4e21dc82002abe0f9ed4675c9b8"><div class="ttname"><a href="struct__comp__tree__t.html#a5973c4e21dc82002abe0f9ed4675c9b8">_comp_tree_t::parent</a></div><div class="ttdeci">struct _comp_tree_t * parent</div><div class="ttdef"><b>Definition:</b> comp_tree.h:22</div></div>
+<div class="ttc" id="struct__comp__tree__t_html_a3b115d082b745f36f462386681cc14be"><div class="ttname"><a href="struct__comp__tree__t.html#a3b115d082b745f36f462386681cc14be">_comp_tree_t::dictPointer</a></div><div class="ttdeci">comp_dict_item_t * dictPointer</div><div class="ttdef"><b>Definition:</b> comp_tree.h:21</div></div>
+<div class="ttc" id="struct__comp__tree__t_html_ae9b2a6bcff86e6835227a58226bf3ab4"><div class="ttname"><a href="struct__comp__tree__t.html#ae9b2a6bcff86e6835227a58226bf3ab4">_comp_tree_t::child</a></div><div class="ttdeci">struct _comp_tree_t * child</div><div class="ttdef"><b>Definition:</b> comp_tree.h:24</div></div>
+<div class="ttc" id="comp__tree_8h_html_ab4e410776278d6989f34bd998dad6d6e"><div class="ttname"><a href="comp__tree_8h.html#ab4e410776278d6989f34bd998dad6d6e">countTreeNodes</a></div><div class="ttdeci">int countTreeNodes(comp_tree_t *tree)</div><div class="ttdoc">Conta o nÃºmero de nÃ³s caminhando por toda a Ã¡rvore. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:9</div></div>
+<div class="ttc" id="comp__tree_8h_html_abf33fe80c3dff219bf478a537427f1ab"><div class="ttname"><a href="comp__tree_8h.html#abf33fe80c3dff219bf478a537427f1ab">createTree</a></div><div class="ttdeci">void createTree(comp_tree_t **tree)</div><div class="ttdoc">Cria uma nova Ã¡rvore. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:5</div></div>
+<div class="ttc" id="struct__comp__tree__t_html_ac10ee94f3835993e05f629e6adf84a28"><div class="ttname"><a href="struct__comp__tree__t.html#ac10ee94f3835993e05f629e6adf84a28">_comp_tree_t::brother</a></div><div class="ttdeci">struct _comp_tree_t * brother</div><div class="ttdef"><b>Definition:</b> comp_tree.h:23</div></div>
+<div class="ttc" id="comp__tree_8h_html_a65aba7723b3431a1d6061734b4965f83"><div class="ttname"><a href="comp__tree_8h.html#a65aba7723b3431a1d6061734b4965f83">appendOnChildPointer</a></div><div class="ttdeci">void appendOnChildPointer(comp_tree_t *root, comp_tree_t *tree)</div><div class="ttdoc">Concatena uma Ã¡rvore como filha de uma raÃ­z. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:232</div></div>
+<div class="ttc" id="comp__tree_8h_html_a2568485173d567acf531e70985054bb8"><div class="ttname"><a href="comp__tree_8h.html#a2568485173d567acf531e70985054bb8">countLeafs</a></div><div class="ttdeci">int countLeafs(comp_tree_t *tree)</div><div class="ttdoc">Conta as folhas da Ã¡rvore. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:39</div></div>
+<div class="ttc" id="comp__tree_8h_html_ac8ca95f20405efc9b2838e602baa7355"><div class="ttname"><a href="comp__tree_8h.html#ac8ca95f20405efc9b2838e602baa7355">countDepth</a></div><div class="ttdeci">int countDepth(comp_tree_t *tree)</div><div class="ttdoc">Conta a profundidade da Ã¡rvore. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:55</div></div>
+<div class="ttc" id="struct__comp__tree__t_html_aa31ddd720fc5723bf2d644ddeddb7a24"><div class="ttname"><a href="struct__comp__tree__t.html#aa31ddd720fc5723bf2d644ddeddb7a24">_comp_tree_t::key</a></div><div class="ttdeci">int key</div><div class="ttdef"><b>Definition:</b> comp_tree.h:19</div></div>
+<div class="ttc" id="comp__tree_8h_html_abff06c334cf09986c5a300bc3d967d6a"><div class="ttname"><a href="comp__tree_8h.html#abff06c334cf09986c5a300bc3d967d6a">getKeyNode</a></div><div class="ttdeci">comp_tree_t * getKeyNode(comp_tree_t *tree, int key)</div><div class="ttdoc">Dado uma chave, retorna um ponteiro para o nodo que possui a chave especificada. Se nÃ£o encontrar...</div><div class="ttdef"><b>Definition:</b> comp_tree.c:75</div></div>
+<div class="ttc" id="comp__tree_8h_html_ab9f23f1a418cd6a7f4630c52b463842b"><div class="ttname"><a href="comp__tree_8h.html#ab9f23f1a418cd6a7f4630c52b463842b">appendOnBrotherPointer</a></div><div class="ttdeci">void appendOnBrotherPointer(comp_tree_t *root, comp_tree_t *tree)</div><div class="ttdoc">Concatena uma Ã¡rvore como irmÃ£ de uma raÃ­z. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:250</div></div>
+<div class="ttc" id="comp__tree_8h_html_a92d3cddde69018c00cdede187e0f2893"><div class="ttname"><a href="comp__tree_8h.html#a92d3cddde69018c00cdede187e0f2893">destroyTree</a></div><div class="ttdeci">void destroyTree(comp_tree_t **tree)</div><div class="ttdoc">DestrÃ³i a Ã¡rvore, libera toda a memÃ³ria associada a ela. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:183</div></div>
+<div class="ttc" id="comp__tree_8h_html_aa243bd09d4ade35fbaa66e96154b6bdb"><div class="ttname"><a href="comp__tree_8h.html#aa243bd09d4ade35fbaa66e96154b6bdb">countChild</a></div><div class="ttdeci">int countChild(comp_tree_t *tree, int key)</div><div class="ttdoc">Conta o nÃºmero de filhos de um nÃ³. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:90</div></div>
+<div class="ttc" id="comp__tree_8h_html_a6e5a7d1233e0318c6d43d4867dcc4645"><div class="ttname"><a href="comp__tree_8h.html#a6e5a7d1233e0318c6d43d4867dcc4645">containsValue</a></div><div class="ttdeci">int containsValue(comp_tree_t *tree, int value)</div><div class="ttdoc">Testa se algum nÃ³ da Ã¡rvore possui o valor especificado. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:24</div></div>
+<div class="ttc" id="comp__tree_8h_html_acaeb92d32055d5a4b37acb7c866f2a03"><div class="ttname"><a href="comp__tree_8h.html#acaeb92d32055d5a4b37acb7c866f2a03">updateValue</a></div><div class="ttdeci">int updateValue(comp_tree_t *tree, int key, int newValue)</div><div class="ttdoc">Atualiza o valor associado de um nÃ³, dado sua chave. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:166</div></div>
+<div class="ttc" id="struct__comp__tree__t_html_a798e6075f7c1d51c060d00b302ece217"><div class="ttname"><a href="struct__comp__tree__t.html#a798e6075f7c1d51c060d00b302ece217">_comp_tree_t::value</a></div><div class="ttdeci">int value</div><div class="ttdef"><b>Definition:</b> comp_tree.h:20</div></div>
+<div class="ttc" id="comp__tree_8h_html_a567137a0cc7d01c98ceeda4d215e8c66"><div class="ttname"><a href="comp__tree_8h.html#a567137a0cc7d01c98ceeda4d215e8c66">printTree</a></div><div class="ttdeci">void printTree(comp_tree_t *tree)</div><div class="ttdoc">Imprime a Ã¡rvore utilizando o caminhamento prÃ©-fixado. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:219</div></div>
+<div class="ttc" id="comp__tree_8h_html_ae5080a28192ecffef8b5ce8460e4a423"><div class="ttname"><a href="comp__tree_8h.html#ae5080a28192ecffef8b5ce8460e4a423">isTreeEmpty</a></div><div class="ttdeci">int isTreeEmpty(comp_tree_t *tree)</div><div class="ttdoc">Testa se a Ã¡rvore estÃ¡ vazia. </div><div class="ttdef"><b>Definition:</b> comp_tree.c:70</div></div>
+<div class="ttc" id="comp__dict_8h_html"><div class="ttname"><a href="comp__dict_8h.html">comp_dict.h</a></div><div class="ttdoc">Estrutura da tabela de símbolos. </div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+Gerado em Sexta, 13 de Setembro de 2013 17:38:04 para Compilador IKS por &#160;<a href="http://www.doxygen.org/index.html">
+<img class="footer" src="doxygen.png" alt="doxygen"/>
+</a> 1.8.5
+</small></address>
+</body>
+</html>
