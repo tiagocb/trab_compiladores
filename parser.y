@@ -63,8 +63,8 @@ inicio:	programa	{ $$ = createRoot(IKS_AST_PROGRAMA); appendOnChildPointer($$, $
 
 /* O programa é uma sequência de declarações globais (com um ';' no final) e declarações de funções */
 programa:	decl_var_global ';' programa	{ $$ = $3; }
-		| decl_funcao programa		{ $$ = $1; appendOnBrotherPointer($$, $2); }
-		| /* VAZIO */			{ $$ = NULL };
+		| decl_funcao programa		{ $$ = $1; appendOnChildPointer($$, $2); }
+		| /* VAZIO */			{ $$ = NULL; };
 
 
 /* Uma declaração global pode ser de um vetor ou de uma variável simples.
@@ -111,7 +111,7 @@ bloco_de_comando:	'{' lista_de_comandos '}'	{ $$ = createRoot(IKS_AST_BLOCO); ap
 /* Uma lista de comandos é uma sequência de comandos separados por vírgula.
  * Não é necessário uma vírgula após o último comando da sequência.
  */
-lista_de_comandos:	comando ';' lista_de_comandos	{ $$ = $1; appendOnBrotherPointer($$, $3); }
+lista_de_comandos:	comando ';' lista_de_comandos	{ $$ = $1; appendOnChildPointer($$, $3); }
 			| ';' lista_de_comandos		{ $$ = $2; }
 			| ultimo_comando		{ $$ = $1; };
 ultimo_comando:		comando				{ $$ = $1; }
@@ -138,7 +138,7 @@ op_retorno:		TK_PR_RETURN expressao			{ $$ = createRoot(IKS_AST_RETURN); appendO
 op_saida:		TK_PR_OUTPUT lista_elementos_saida	{ $$ = createRoot(IKS_AST_OUTPUT); appendOnChildPointer($$, $2);}
 			| TK_PR_OUTPUT /* VAZIO */		{ $$ = createRoot(IKS_AST_OUTPUT); };
 lista_elementos_saida:	expressao				{ $$ = $1; }
-			| expressao ',' lista_elementos_saida	{ $$ = $1; appendOnBrotherPointer($$, $3); };
+			| expressao ',' lista_elementos_saida	{ $$ = $1; appendOnChildPointer($$, $3); };
 
 
 /* Uma expressão tem como folha uma variável, um literal ou uma chamada de função.
@@ -166,7 +166,7 @@ expressao:	var				{ $$ = $1; }
 /* Chamada de uma função */
 chamada_funcao:		TK_IDENTIFICADOR '(' lista_de_argumentos ')'	{ $$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO); appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR)); ((comp_tree_t *)$$)->child->dictPointer = (comp_dict_item_t *)$1; appendOnChildPointer($$, $3);}
 			| TK_IDENTIFICADOR '(' /* VAZIO */ ')'		{ $$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO); appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR)); ((comp_tree_t *)$$)->child->dictPointer = (comp_dict_item_t *)$1; };
-lista_de_argumentos:	expressao ',' lista_de_argumentos		{ $$ = $1; appendOnBrotherPointer($$, $3); }
+lista_de_argumentos:	expressao ',' lista_de_argumentos		{ $$ = $1; appendOnChildPointer($$, $3); }
 			| expressao					{ $$ = $1; };
 
 /* Controle de fluxo */
@@ -207,6 +207,7 @@ tipo:	TK_PR_INT	{$$ = 0;}
 
 comp_tree_t *createRoot(int value){
 	comp_tree_t **root;
+	root = malloc(sizeof(comp_tree_t *));
 	createTree(root);
 	insert(root, value, 1, 0);
 	return *root;
