@@ -23,8 +23,12 @@ typedef struct _comp_list_node {
 void createList(comp_list_t **list);
 //!  Limpa a lista, libera toda a memória associada a lista
 void clearList(comp_list_t **list);
+//!  Conta o número de elementos da lista
+int countListNodes(comp_list_t *list);
 //!  Imprime a lista
 void printList(comp_list_t *list);
+//!  Insere um elemento no início da lista. Retorna 1 se a operação foi bem sucedida e 0 caso contrário
+int insertHead (comp_list_t **list, int value);
 //!  Insere um elemento no fim da lista. Retorna 1 se a operação foi bem sucedida e 0 caso contrário
 int insertTail(comp_list_t **list, int value);
 //!  Deleta um elemento em uma posição específica. Retorna 1 se a operação foi bem sucedida e 0 caso contrário
@@ -35,5 +39,7 @@ int getFirst(comp_list_t *list);
 int isListEmpty(comp_list_t *list);
 //!  Atualiza o valor associado de um elemento da lista dado a sua posição. Retorna 1 se a operação foi bem sucedida e 0 caso contrário
 int update(comp_list_t *list, int position, int newValue);
+//!  Compara duas listas. Retorna 0 se são iguais e um se são diferentes
+int compare(comp_list_t *list1, comp_list_t *list2);
 
 #endif

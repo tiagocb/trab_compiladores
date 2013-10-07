@@ -6,54 +6,53 @@
 #include "comp_graph.h"
 #include "main.h"
 
-void generateASTFile(comp_tree_t *ast);
+void printAST(comp_tree_t *ast);
 
 void yyerror (char const *mensagem) {
-	fprintf(stderr, "%s. Line %d\n", mensagem, obtemLinhaAtual());
+	printf("Erro de sintaxe na linha %d\n", obtemLinhaAtual());
 }
 
 int main (int argc, char **argv) {
-	createDictionaty(&tabelaDeSimbolos, 10);//Cria tabela de sÃ­mbolos
-
 	int resultado =  yyparse();
-
-	//printDictionary(tabelaDeSimbolos);
-	//printTree(ast);
 
 	switch(resultado){
 		default:
-		case 0: // SUCCESS parsing
-
-			gv_init(NULL);
-			generateASTFile(ast);
-			gv_close();
-
-			exit(IKS_SYNTAX_SUCESSO); break;
-		case 1: // ERROR: input is incorrect and error recovery is impossible
-			exit(IKS_SYNTAX_ERRO); break;
-		case 2: // ERROR: memory exhaustion
-			exit(IKS_SYNTAX_ERRO); break;
+		case 0:
+				printf("Sucesso.\n");
+				break;
+		case 1: exit(IKS_SYNTAX_ERROR); break;
+		case 2: printf("Exaustao da memoria.\n"); exit(IKS_MEMORY_ERROR); break;
 	}
+	
+	//tabelaDeSimbolosEscopoGlobal eh um ponteiro para a tabela de símbolos global.
+	//A partir dela, pode-se acessar as outras tabelas
+	
+	//O ponteiro 'ast' contém a AST construída 
+	//printAST(ast);
+	
+	exit(IKS_SUCCESS);
 }
 
-void generateASTFile(comp_tree_t *ast){
-	if(ast == NULL) return;
+void printAST(comp_tree_t *ast){
+	void printASTRecursive(comp_tree_t *ast){
+		if(ast == NULL) return;
 
-	comp_tree_t *ptAux = ast;
+		comp_tree_t *ptAux = ast;
+		while (ptAux != NULL) {
+			if(ptAux->value == IKS_AST_FUNCAO || ptAux->value == IKS_AST_IDENTIFICADOR || ptAux->value == IKS_AST_LITERAL)
+				gv_declare(ptAux->value, ptAux, ptAux->dictPointer->key);
+			else
+				gv_declare(ptAux->value, ptAux, NULL);
 
-	while (ptAux != NULL) {
-		if(ptAux->value == IKS_AST_FUNCAO || ptAux->value == IKS_AST_IDENTIFICADOR || ptAux->value == IKS_AST_LITERAL)
-			gv_declare(ptAux->value, ptAux, ptAux->dictPointer->key);
-		else
-			gv_declare(ptAux->value, ptAux, NULL);
-
-		if(ptAux->parent != NULL) gv_connect(ptAux->parent, ptAux);
-
-		generateASTFile(ptAux->child);
-
-		ptAux = ptAux->brother;
+			if(ptAux->parent != NULL) gv_connect(ptAux->parent, ptAux);
+			printASTRecursive(ptAux->child);
+			ptAux = ptAux->brother;
+		}
+		return;
 	}
 
-	return;
+	gv_init(NULL);
+	printASTRecursive(ast);
+	gv_close();
 }
 

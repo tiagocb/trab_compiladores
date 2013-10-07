@@ -7,6 +7,27 @@ void createList (comp_list_t **list) {
 	*list = NULL;
 }
 
+int countListNodes(comp_list_t *list){
+	int count = 0;
+	comp_list_t *ptAux = list;
+	while(ptAux != NULL){
+		count++;
+		ptAux = ptAux->next;
+	}
+	return count;
+}
+
+/* insert node at the head of the list */
+int insertHead (comp_list_t **list, int value) {
+	comp_list_t *newNode;
+	newNode = malloc(sizeof(comp_list_t));
+	if (newNode == NULL) return 1;//couldnt alloc
+	newNode->value = value;
+	newNode->next = *list;
+	*list = newNode;
+	return 0;
+}
+
 /* insert node at the tail of the list */
 int insertTail (comp_list_t **list, int value) {
 	comp_list_t *newNode;
@@ -123,4 +144,17 @@ void printList (comp_list_t *list) {
 		counter++;
 		ptAux = ptAux->next;
 	}
+}
+
+int compare(comp_list_t *list1, comp_list_t *list2){
+	comp_list_t *ptAux1 = list1;
+	comp_list_t *ptAux2 = list2;
+	while(ptAux1 != NULL && ptAux2 != NULL){
+		if(ptAux1->value != ptAux2->value) return 1;
+		ptAux1 = ptAux1->next;
+		ptAux2 = ptAux2->next;
+	}
+	
+	if(ptAux1 != NULL || ptAux2 != NULL) return 1;
+	return 0;
 }

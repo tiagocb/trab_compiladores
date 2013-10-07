@@ -3,7 +3,7 @@
 #include <string.h>
 #include "comp_dict.h"
 
-int createDictionaty (comp_dict_t *dict, int numberOfLists) {
+int createDictionaty(comp_dict_t *dict, int numberOfLists, comp_dict_t *parent) {
 	if (numberOfLists < 1) return 1;//invalid list number
 	dict->numberOfLists = numberOfLists;
 	dict->table = malloc(sizeof(comp_dict_node_t *) * numberOfLists);
@@ -12,6 +12,7 @@ int createDictionaty (comp_dict_t *dict, int numberOfLists) {
 		dict->table[i] = NULL;
 
 	dict->numberOfElements = 0;
+	dict->parent = parent;
 	return 0;
 }
 
@@ -35,12 +36,7 @@ comp_dict_item_t *searchKey (comp_dict_t dict, char *key) {
 	return NULL;
 }
 
-comp_dict_item_t *insertKey (comp_dict_t *dict, char *key, int type, int line) {
-	if(key[0] == '"'){ //é uma string
-		key[strlen(key) - 1] = '\0';
-		key = key + 1;
-	}
-	
+comp_dict_item_t *insertKey(comp_dict_t *dict, char *key, int valueType, int line) {	
 	comp_dict_item_t *item;
 	item = searchKey(*dict, key);
 	if (item != NULL){
@@ -56,24 +52,46 @@ comp_dict_item_t *insertKey (comp_dict_t *dict, char *key, int type, int line) {
 	if (newNode->item == NULL) return NULL;//couldnt alloc
 
 	newNode->item->key = strdup(key);
-	newNode->item->type = type;
-	newNode->item->floatValue = 0;
+	newNode->item->valueType = valueType;
+	if(valueType == IKS_STRING){ //cut string's double quotes 
+		newNode->item->stringValue = strdup(key);
+		newNode->item->stringValue[strlen(key) - 1] = '\0';
+		newNode->item->stringValue = newNode->item->stringValue + 1;
+	}
+	if(valueType == IKS_CHAR){ //cut char's single quotes
+		newNode->item->charValue = key[1];
+	}
+	if(valueType == IKS_INT){
+		newNode->item->intValue = atoi(key);
+	}
+	if(valueType == IKS_FLOAT){
+		newNode->item->floatValue = atof(key);
+	}
+	if(valueType == IKS_BOOL){
+		newNode->item->boolValue = (strcmp(key, "true") == 0 ? 1: 0);
+	}
+	if(valueType == IKS_UNDEFINED){
+		newNode->item->floatValue = 0;
+	}
+	newNode->item->nodeType = IKS_UNDEFINED_ITEM;
 	newNode->item->line = line;
+	newNode->item->numBytes = 0;
+	newNode->item->functionSymbolTable = NULL;
+	createList(&(newNode->item->parametersList));
 	newNode->next = dict->table[hashValue];
 	dict->table[hashValue] = newNode;
 	dict->numberOfElements++;
 	return newNode->item;
 }
 
-/* Updates the value associated with the key */
-int updateKey (comp_dict_t dict, char *key, int newType) {
+int updateKey(comp_dict_t dict, char *key, int newValueType) {
 	comp_dict_node_t *node;
 	unsigned int hashValue = hashFunction(dict.numberOfLists, key);
 
 	int existingKey = 0;
 	for (node = dict.table[hashValue]; node != NULL; node = node->next)
 		if (strcmp(key, node->item->key) == 0) {
-			node->item->type = newType;
+			node->item->valueType = newValueType;
 			existingKey = 1;
 			break;
 		}
@@ -82,7 +100,6 @@ int updateKey (comp_dict_t dict, char *key, int newType) {
 	return 0;
 }
 
-/* Deletes the node associated with the key */
 int deleteKey (comp_dict_t *dict, char *key) {
 	comp_dict_node_t *node, *tempNode;
 	unsigned int hashValue = hashFunction(dict->numberOfLists, key);
@@ -92,6 +109,8 @@ int deleteKey (comp_dict_t *dict, char *key) {
 	if (strcmp(key, node->item->key) == 0) {
 		tempNode = node;
 		dict->table[hashValue] = node->next;
+		if(tempNode->item->valueType == IKS_STRING)
+			free(tempNode->item->stringValue);
 		free(tempNode->item->key);
 		free(tempNode->item);
 		free(tempNode);
@@ -103,6 +122,8 @@ int deleteKey (comp_dict_t *dict, char *key) {
 		if (strcmp(key, node->next->item->key) == 0) {
 			tempNode = node->next;
 			node->next = node->next->next;
+			if(tempNode->item->valueType == IKS_STRING)
+				free(tempNode->item->stringValue);
 			free(tempNode->item->key);
 			free(tempNode->item);
 			free(tempNode);
@@ -118,7 +139,6 @@ int getNumberOfKeys (comp_dict_t dict) {
 	return dict.numberOfElements;
 }
 
-/* Remove all items in the table */
 void clearDictionaryContent (comp_dict_t *dict) {
 	comp_dict_node_t *node, *tempNode;
 	int i;
@@ -127,6 +147,8 @@ void clearDictionaryContent (comp_dict_t *dict) {
 		while (node != NULL){
 			tempNode = node;
 			node = node->next;
+			if(tempNode->item->valueType == IKS_STRING)
+				free(tempNode->item->stringValue);
 			free(tempNode->item->key);
 			free(tempNode->item);
 			free(tempNode);
@@ -137,7 +159,6 @@ void clearDictionaryContent (comp_dict_t *dict) {
 	dict->numberOfElements = 0;
 }
 
-/* Destroy dictionaty table */
 void destroyDictionary (comp_dict_t *dict) {
 	clearDictionaryContent(dict);
 	free(dict->table);
@@ -145,7 +166,6 @@ void destroyDictionary (comp_dict_t *dict) {
 	dict->table = NULL;
 }
 
-/* Print dictionary content */
 void printDictionary (comp_dict_t dict) {
 	if (dict.table == NULL) {
 		printf("Tabela nao inicializada\n");
@@ -162,16 +182,24 @@ void printDictionary (comp_dict_t dict) {
 
 		int counter = 0;
 		while (node != NULL) {
-			printf("\tnode %d: %s -> (line: %d, type: ", counter, node->item->key, node->item->line);
-			switch(node->item->type){
-				case IKS_SIMBOLO_INT: printf("int, value: %d)\n", node->item->intValue); break;
-				case IKS_SIMBOLO_FLOAT: printf("float, value: %f)\n", node->item->floatValue); break;
-				case IKS_SIMBOLO_CHAR: printf("char, value: %c)\n", node->item->charValue); break;
-				case IKS_SIMBOLO_STRING: printf("string, value: %s)\n", node->item->stringValue); break;
-				case IKS_SIMBOLO_BOOL: printf("bool, value: %d)\n", node->item->boolValue); break;
-				case IKS_SIMBOLO_INDEFINIDO: printf("indefinido)\n"); break;
-				default: printf("outro)\n"); break;
+			printf("\tnode %d: %s -> (", counter, node->item->key);
+			switch(node->item->nodeType){
+				case IKS_VARIABLE_ITEM: printf("VARIABLE, "); break;
+				case IKS_VECTOR_ITEM: printf("VECTOR, "); break;
+				case IKS_LITERAL_ITEM: printf("LITERAL, "); break;
+				case IKS_FUNCTION_ITEM: printf("FUNCTION, "); break;
+				case IKS_UNDEFINED_ITEM: printf("UNDEFINED, "); break;
 			}
+			switch(node->item->valueType){
+				case IKS_INT: printf("int, value: %d, ", node->item->intValue); break;
+				case IKS_FLOAT: printf("float, value: %f, ", node->item->floatValue); break;
+				case IKS_CHAR: printf("char, value: %c, ", node->item->charValue); break;
+				case IKS_STRING: printf("string, value: %s, ", node->item->stringValue); break;
+				case IKS_BOOL: printf("bool, value: %d, ", node->item->boolValue); break;
+				case IKS_UNDEFINED: printf("undefined, value: %d, ", node->item->intValue); break;
+			}
+			printf("line: %d)\n", node->item->line);
+			
 			node = node->next;
 			counter++;
 		}

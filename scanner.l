@@ -1,16 +1,16 @@
 %{
+#include <string.h>
 #include "parser.h"
 #include "main.h"
 
 int linha = 1;
 int obtemLinhaAtual();
-
-comp_dict_t tabelaDeSimbolos;
 %}
 
 CARACTER_	[A-Za-z_]
 DIGITO		[0-9]
 %x IN_COMMENT
+%option noyywrap
 
 %%
 \n	{ linha++; }
@@ -37,17 +37,16 @@ return	{ return TK_PR_RETURN; }
 "|""|" { return TK_OC_OR; }
 "&""&" { return TK_OC_AND; }
 
-{DIGITO}+		{ yylval.symbol = insertKey(&tabelaDeSimbolos, yytext, IKS_SIMBOLO_INT, linha); return TK_LIT_INT; }
-{DIGITO}+"."{DIGITO}+	{ yylval.symbol = insertKey(&tabelaDeSimbolos, yytext, IKS_SIMBOLO_FLOAT, linha); return TK_LIT_FLOAT; }
-false			{ yylval.symbol = insertKey(&tabelaDeSimbolos, yytext, IKS_SIMBOLO_BOOL, linha); return TK_LIT_FALSE; }
-true			{ yylval.symbol = insertKey(&tabelaDeSimbolos, yytext, IKS_SIMBOLO_BOOL, linha); return TK_LIT_TRUE; }
-("'")([^\n])("'")	{ yylval.symbol = insertKey(&tabelaDeSimbolos, yytext, IKS_SIMBOLO_CHAR, linha); return TK_LIT_CHAR; }
-("\"")([^"\""]*)("\"")	{ yylval.symbol = insertKey(&tabelaDeSimbolos, yytext, IKS_SIMBOLO_STRING, linha); return TK_LIT_STRING; }
 
-{CARACTER_}({CARACTER_}|{DIGITO})*	{ yylval.symbol = insertKey(&tabelaDeSimbolos, yytext, IKS_SIMBOLO_INDEFINIDO, linha); return TK_IDENTIFICADOR; }
+{DIGITO}+							{ yylval.symbol = strdup(yytext); return TK_LIT_INT; }
+{DIGITO}+"."{DIGITO}+				{ yylval.symbol = strdup(yytext); return TK_LIT_FLOAT; }
+false								{ yylval.symbol = strdup(yytext); return TK_LIT_FALSE; }
+true								{ yylval.symbol = strdup(yytext); return TK_LIT_TRUE; }
+("'")([^\n])("'")					{ yylval.symbol = strdup(yytext); return TK_LIT_CHAR; }
+("\"")([^"\""]*)("\"")				{ yylval.symbol = strdup(yytext); return TK_LIT_STRING; }
+{CARACTER_}({CARACTER_}|{DIGITO})*	{ yylval.symbol = strdup(yytext); return TK_IDENTIFICADOR; }
 
 "/""/"[^\n]* { } //comentarios comecando por //
-
 "/""*" { BEGIN(IN_COMMENT); }	//comentarios do tipo /*...*/
 <IN_COMMENT>{
 	"*""/"		{ BEGIN(INITIAL); }

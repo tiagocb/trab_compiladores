@@ -191,7 +191,7 @@ void gv_declare (const int tipo, const void *pointer, char *name)
     fprintf (stderr, "%s: unknow tipo provided\n", __FUNCTION__);
     abort();
   }
-
+	
   fprintf (fp, "node_%p [label=\"%s\"]\n", pointer, description);
 }
 
