@@ -341,12 +341,20 @@ atribuicao:				var_simples	'=' expressao				{	//Verifica se o tipo da expressao 
 																	//Associa a sub-árvore da expressão no nodo de atribuição
 																	appendOnChildPointer($$, $3);
 																};
-																
-op_entrada:				TK_PR_INPUT var	 						{	//Cria nodo do tipo entrada na AST
+
+op_entrada:				TK_PR_INPUT expressao	 						{	
+																	//Verifica se a expressao é uma variável simples ou um vetor
+																	//Se não for nenhum dos dois, imprime erro e termina
+																	if(!(((comp_tree_t *)$2)->value == IKS_AST_IDENTIFICADOR || ((comp_tree_t *)$2)->value == IKS_AST_VETOR_INDEXADO)){
+																		printf("O parametro do comando input na linha %d nao eh um identificador de uma variavel simples ou de um vetor.\n", obtemLinhaAtual());
+																		exit(IKS_ERROR_WRONG_PAR_INPUT);
+																	}
+																	//Cria nodo do tipo entrada na AST
 																	$$ = createRoot(IKS_AST_INPUT);
 																	//Associa sub-árvore da variável no nodo do tipo entrada
 																	appendOnChildPointer($$, $2);
 																};
+
 
 op_retorno:				TK_PR_RETURN expressao					{	//Verifica se o tipo de retorno da função é compatível com o tipo da expressão
 																	//Se não for, imprime erro e termina
@@ -356,39 +364,39 @@ op_retorno:				TK_PR_RETURN expressao					{	//Verifica se o tipo de retorno da f
 																				case IKS_INT: break;
 																				case IKS_FLOAT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$2)->type = IKS_INT; break; //Coercao float -> int
 																				case IKS_BOOL: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$2)->type = IKS_INT; break; //Coercao bool -> int
-																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um int, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um int, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um int, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um int, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																			} break;
 																		case IKS_FLOAT:
 																			switch(((comp_tree_t *)$2)->type){
 																				case IKS_INT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_INT_FLOAT; ((comp_tree_t *)$2)->type = IKS_FLOAT; break; //Coercao int -> float
 																				case IKS_FLOAT: break;
 																				case IKS_BOOL: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_BOOL_FLOAT; ((comp_tree_t *)$2)->type = IKS_FLOAT; break; //Coercao bool -> float
-																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um float, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um float, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um float, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um float, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																			} break;
 																		case IKS_BOOL:
 																			switch(((comp_tree_t *)$2)->type){
 																				case IKS_INT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$2)->type = IKS_BOOL; break; //Coercao int -> bool
 																				case IKS_FLOAT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$2)->type = IKS_BOOL; break; //Coercao float -> bool
 																				case IKS_BOOL: break;
-																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um bool, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um bool, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um bool, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um bool, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																			} break;
 																		case IKS_CHAR:
 																			switch(((comp_tree_t *)$2)->type){
-																				case IKS_INT: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um int.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_FLOAT: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um float.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_BOOL: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um bool.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
+																				case IKS_INT: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um int.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_FLOAT: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um float.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_BOOL: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um bool.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																				case IKS_CHAR: break;
-																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																			} break;
 																		case IKS_STRING:
 																			switch(((comp_tree_t *)$2)->type){
-																				case IKS_INT: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um int.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_FLOAT: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um float.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_BOOL: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um bool.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+																				case IKS_INT: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um int.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_FLOAT: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um float.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_BOOL: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um bool.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																				case IKS_STRING: break;
 																			} break;
 																	}
@@ -800,69 +808,71 @@ expressao:	var								{ $$ = $1; }
 
 /* Chamada de uma função */
 chamada_funcao:		nome_fun '(' lista_de_argumentos ')'	{
-																			//Verifica se o identificador já foi declarado (no escopo global)
-																			comp_dict_item_t *item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
-																			//Se não foi, imprime o erro e termina
-																			if(item == NULL){
-																				printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
-																				exit(IKS_ERROR_UNDECLARED);
-																			}
-																			//Se foi, verifica se ele foi declarado como uma função
-																			//Se não foi, imprime o erro e termina
-																			if(item->nodeType != IKS_FUNCTION_ITEM){
-																				printf("O identificador '%s' utilizado na linha %d nao foi declarado como uma funcao.\n", $1, obtemLinhaAtual());
-																				exit(IKS_ERROR_FUNCTION);													
-																			}
-																			free($1);
-																			//Verifica se ainda faltam argumentos
-																			//Se ainda faltam, imprime erro e termina
-																			if(listaDeParametrosSendoLida != NULL){
-																				printf("A chamada da funcao '%s' na linha %d possui menos argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
-																				exit(IKS_ERROR_MISSING_ARGS);
-																			}
-																			//Cria um nó de chamada de função na AST
-																			$$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO);
-																			//Associa o tipo do nó de chamada de função (tipo de retorno da função)
-																			((comp_tree_t *)$$)->type = item->valueType;
-																			//Cria um nó de identificador como filho do nó de chamada de função
-																			appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
-																			//Associa um ponteiro para uma entrada na tabela de símbolos no nó de identificador
-																			((comp_tree_t *)$$)->child->dictPointer = item;
-																			//Associa a sub-árvore que contém os argumentos no nó de chamada de função
-																			appendOnChildPointer($$, $3);
-																		}
-						| nome_fun '(' /* VAZIO */ ')'			{	//Verifica se o identificador já foi declarado (no escopo global)
-																			comp_dict_item_t *item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
-																			//Se não foi, imprime o erro e termina
-																			if(item == NULL){
-																				printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
-																				exit(IKS_ERROR_UNDECLARED);
-																			}
-																			//Se foi, verifica se ele foi declarado como uma função
-																			//Se não foi, imprime o erro e termina
-																			if(item->nodeType != IKS_FUNCTION_ITEM){
-																				printf("O identificador '%s' utilizado na linha %d nao foi declarado como uma funcao.\n", $1, obtemLinhaAtual());
-																				exit(IKS_ERROR_FUNCTION);													
-																			}
-																			//Se foi, verifica se a função não precisa de parâmetros
-																			//Se precisa, imprime erro e termina
-																			if(countListNodes(item->parametersList) > 0){
-																				printf("Faltam argumentos na chamada da funcao '%s' na linha %d.\n", $1, obtemLinhaAtual());
-																				exit(IKS_ERROR_MISSING_ARGS);
-																			}
-																			//Se não precisa, a chamada é válida
-																			free($1);
-																			//Cria um nó de chamada de função na AST
-																			$$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO);
-																			//Associa o tipo do nó de chamada de função (tipo de retorno da função)
-																			((comp_tree_t *)$$)->type = item->valueType;
-																			//Cria um nó de identificador como filho do nó de chamada de função
-																			appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
-																			//Associa um ponteiro para uma entrada na tabela de símbolos no nó de identificador
-																			((comp_tree_t *)$$)->child->dictPointer = item;
-																		};
+									//Verifica se o identificador já foi declarado (no escopo global)
+									comp_dict_item_t *item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
+									//Se não foi, imprime o erro e termina
+									if(item == NULL){
+										printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
+										exit(IKS_ERROR_UNDECLARED);
+									}
+									//Se foi, verifica se ele foi declarado como uma função
+									//Se não foi, imprime o erro e termina
+									switch(item->nodeType){
+										case IKS_VARIABLE_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma variavel simples e nao como uma funcao.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VARIABLE); break;
+										case IKS_VECTOR_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como um vetor e nao como uma funcao.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VECTOR); break;
+										case IKS_FUNCTION_ITEM: break;
+									}
+									free($1);
+									//Verifica se ainda faltam argumentos
+									//Se ainda faltam, imprime erro e termina
+									if(listaDeParametrosSendoLida != NULL){
+										printf("A chamada da funcao '%s' na linha %d possui menos argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
+										exit(IKS_ERROR_MISSING_ARGS);
+									}
+									//Cria um nó de chamada de função na AST
+									$$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO);
+									//Associa o tipo do nó de chamada de função (tipo de retorno da função)
+									((comp_tree_t *)$$)->type = item->valueType;
+									//Cria um nó de identificador como filho do nó de chamada de função
+									appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
+									//Associa um ponteiro para uma entrada na tabela de símbolos no nó de identificador
+									((comp_tree_t *)$$)->child->dictPointer = item;
+									//Associa a sub-árvore que contém os argumentos no nó de chamada de função
+									appendOnChildPointer($$, $3);
+								}
+			| nome_fun '(' /* VAZIO */ ')'		{	//Verifica se o identificador já foi declarado (no escopo global)
+									comp_dict_item_t *item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
+									//Se não foi, imprime o erro e termina
+									if(item == NULL){
+										printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
+										exit(IKS_ERROR_UNDECLARED);
+									}
+									//Se foi, verifica se ele foi declarado como uma função
+									//Se não foi, imprime o erro e termina
+									switch(item->nodeType){
+										case IKS_VARIABLE_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma variavel simples e nao como uma funcao.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VARIABLE); break;
+										case IKS_VECTOR_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como um vetor e nao como uma funcao.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VECTOR); break;
+										case IKS_FUNCTION_ITEM: break;
+									}
+									//Se foi, verifica se a função não precisa de parâmetros
+									//Se precisa, imprime erro e termina
+									if(countListNodes(item->parametersList) > 0){
+										printf("Faltam argumentos na chamada da funcao '%s' na linha %d.\n", $1, obtemLinhaAtual());
+										exit(IKS_ERROR_MISSING_ARGS);
+									}
+									//Se não precisa, a chamada é válida
+									free($1);
+									//Cria um nó de chamada de função na AST
+									$$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO);
+									//Associa o tipo do nó de chamada de função (tipo de retorno da função)
+									((comp_tree_t *)$$)->type = item->valueType;
+									//Cria um nó de identificador como filho do nó de chamada de função
+									appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
+									//Associa um ponteiro para uma entrada na tabela de símbolos no nó de identificador
+									((comp_tree_t *)$$)->child->dictPointer = item;
+								};
 																		
-nome_fun:	TK_IDENTIFICADOR 	{
+nome_fun:		TK_IDENTIFICADOR 			{
 									simboloDaFuncaoSendoChamada = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
 									if(simboloDaFuncaoSendoChamada == NULL){
 										printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
@@ -872,107 +882,107 @@ nome_fun:	TK_IDENTIFICADOR 	{
 									$$ = $1;
 								}
 
-lista_de_argumentos:	expressao ',' lista_de_argumentos				{	//Verifica se o tipo de expressão é compatível com o parâmetro da posição correspondente
-																			if(listaDeParametrosSendoLida == NULL){
-																				printf("A chamada da funcao '%s' na linha %d possui mais argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
-																				exit(IKS_ERROR_EXCESS_ARGS);
-																			}
-																			switch(listaDeParametrosSendoLida->value){
-																				case IKS_INT:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: break;
-																						case IKS_FLOAT: break; //Coercao float -> int
-																						case IKS_BOOL: break; //Coercao bool -> int
-																						case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																					} break;
-																				case IKS_FLOAT:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: break; //Coercao int -> float
-																						case IKS_FLOAT: break;
-																						case IKS_BOOL: break; //Coercao bool -> float
-																						case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																					} break;
-																				case IKS_BOOL:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: break; //Coercao int -> bool
-																						case IKS_FLOAT: break; //Coercao float -> bool
-																						case IKS_BOOL: break;
-																						case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																					} break;
-																				case IKS_CHAR:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_FLOAT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_BOOL: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_CHAR: break;
-																						case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																					} break;
-																				case IKS_STRING:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_FLOAT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_BOOL: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_STRING: break;
-																					} break;
-																			}
-																			listaDeParametrosSendoLida = listaDeParametrosSendoLida->next;
-																			$$ = $1;
-																			appendOnChildPointer($$, $3);
-																		}
-						| expressao										{	//Verifica se o tipo da expressão é compatível com o último parâmetro da função
-																			if(listaDeParametrosSendoLida == NULL){
-																				printf("A chamada da funcao '%s' na linha %d possui mais argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
-																				exit(IKS_ERROR_EXCESS_ARGS);
-																			}
-																			switch(listaDeParametrosSendoLida->value){
-																				case IKS_INT:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: break;
-																						case IKS_FLOAT: break; //Coercao float -> int
-																						case IKS_BOOL: break; //Coercao bool -> int
-																						case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																					} break;
-																				case IKS_FLOAT:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: break; //Coercao int -> float
-																						case IKS_FLOAT: break;
-																						case IKS_BOOL: break; //Coercao bool -> float
-																						case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																					} break;
-																				case IKS_BOOL:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: break; //Coercao int -> bool
-																						case IKS_FLOAT: break; //Coercao float -> bool
-																						case IKS_BOOL: break;
-																						case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																					} break;
-																				case IKS_CHAR:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_FLOAT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_BOOL: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_CHAR: break;
-																						case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																					} break;
-																				case IKS_STRING:
-																					switch(((comp_tree_t *)$1)->type){
-																						case IKS_INT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_FLOAT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_BOOL: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-																						case IKS_STRING: break;
-																					} break;
-																			}
-																			listaDeParametrosSendoLida = listaDeParametrosSendoLida->next;
-																			$$ = $1;
-																		};
+lista_de_argumentos:	expressao ',' lista_de_argumentos	{	//Verifica se o tipo de expressão é compatível com o parâmetro da posição correspondente
+									if(listaDeParametrosSendoLida == NULL){
+										printf("A chamada da funcao '%s' na linha %d possui mais argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
+										exit(IKS_ERROR_EXCESS_ARGS);
+									}
+									switch(listaDeParametrosSendoLida->value){
+										case IKS_INT:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: break;
+												case IKS_FLOAT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$1)->type = IKS_INT; break; //Coercao float -> int
+												case IKS_BOOL: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$1)->type = IKS_INT; break; //Coercao bool -> int
+												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+											} break;
+										case IKS_FLOAT:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_INT_FLOAT; ((comp_tree_t *)$1)->type = IKS_FLOAT; break; //Coercao int -> float
+												case IKS_FLOAT: break;
+												case IKS_BOOL: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_BOOL_FLOAT; ((comp_tree_t *)$1)->type = IKS_FLOAT; break; //Coercao bool -> float
+												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+											} break;
+										case IKS_BOOL:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$1)->type = IKS_BOOL; break; //Coercao int -> bool
+												case IKS_FLOAT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$1)->type = IKS_BOOL; break; //Coercao float -> bool
+												case IKS_BOOL: break;
+												case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+											} break;
+										case IKS_CHAR:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_FLOAT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_BOOL: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_CHAR: break;
+												case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+											} break;
+										case IKS_STRING:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_FLOAT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_BOOL: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_STRING: break;
+											} break;
+									}
+									listaDeParametrosSendoLida = listaDeParametrosSendoLida->next;
+									$$ = $1;
+									appendOnChildPointer($$, $3);
+								}
+			| expressao				{	//Verifica se o tipo da expressão é compatível com o último parâmetro da função
+									if(listaDeParametrosSendoLida == NULL){
+										printf("A chamada da funcao '%s' na linha %d possui mais argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
+										exit(IKS_ERROR_EXCESS_ARGS);
+									}
+									switch(listaDeParametrosSendoLida->value){
+										case IKS_INT:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: break;
+												case IKS_FLOAT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$1)->type = IKS_INT; break; //Coercao float -> int
+												case IKS_BOOL: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$1)->type = IKS_INT; break; //Coercao bool -> int
+												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+											} break;
+										case IKS_FLOAT:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_INT_FLOAT; ((comp_tree_t *)$1)->type = IKS_FLOAT; break; //Coercao int -> float
+												case IKS_FLOAT: break;
+												case IKS_BOOL: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_BOOL_FLOAT; ((comp_tree_t *)$1)->type = IKS_FLOAT; break; //Coercao bool -> float
+												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+											} break;
+										case IKS_BOOL:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$1)->type = IKS_BOOL; break; //Coercao int -> bool
+												case IKS_FLOAT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$1)->type = IKS_BOOL; break; //Coercao float -> bool
+												case IKS_BOOL: break;
+												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+											} break;
+										case IKS_CHAR:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_FLOAT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_BOOL: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_CHAR: break;
+												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+											} break;
+										case IKS_STRING:
+											switch(((comp_tree_t *)$1)->type){
+												case IKS_INT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_FLOAT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_BOOL: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												case IKS_STRING: break;
+											} break;
+									}
+									listaDeParametrosSendoLida = listaDeParametrosSendoLida->next;
+									$$ = $1;
+								};
 
 			
 			
@@ -989,186 +999,186 @@ lista_de_argumentos:	expressao ',' lista_de_argumentos				{	//Verifica se o tipo
 			
 /* Controle de fluxo */
 controle_fluxo:	TK_PR_IF '(' expressao ')' TK_PR_THEN comando	%prec "then"		{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina	
-																						switch(((comp_tree_t *)$3)->type){
-																							case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de if-else na AST
-																						$$ = createRoot(IKS_AST_IF_ELSE);
-																						//Associa a sub-árvore da expressão booleana no nodo if-else
-																						appendOnChildPointer($$, $3);
-																						//Associa a sub-árvore do comando "then" no nodo if-else
-																						appendOnChildPointer($$, $6);
-																						//Associa NULL como o terceiro filho do nodo if-else para indicar que não tem comando "else"
-																						appendOnChildPointer($$, NULL);
-																					}
+												//Se não for, imprime erro e termina	
+												switch(((comp_tree_t *)$3)->type){
+													case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para um bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter um string para um bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de if-else na AST
+												$$ = createRoot(IKS_AST_IF_ELSE);
+												//Associa a sub-árvore da expressão booleana no nodo if-else
+												appendOnChildPointer($$, $3);
+												//Associa a sub-árvore do comando "then" no nodo if-else
+												appendOnChildPointer($$, $6);
+												//Associa NULL como o terceiro filho do nodo if-else para indicar que não tem comando "else"
+												appendOnChildPointer($$, NULL);
+											}
 																					
-				| TK_PR_IF '(' expressao ')' TK_PR_THEN ';'	%prec "then"			{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina
-																						switch(((comp_tree_t *)$3)->type){
-																							case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de if-else na AST
-																						$$ = createRoot(IKS_AST_IF_ELSE);
-																						//Associa a sub-árvore da expressão booleana no nodo if-else
-																						appendOnChildPointer($$, $3);
-																						//Associa NULL como segundo filho do nodo if-else para indicar que não tem comandos "then"
-																						appendOnChildPointer($$, NULL);
-																						//Associa NULL como o terceiro filho do nodo if-else para indicar que não tem comando "else"
-																						appendOnChildPointer($$, NULL);
-																					}
+		| TK_PR_IF '(' expressao ')' TK_PR_THEN ';'	%prec "then"		{	//Verifica se a expressão é compatível com o tipo bool
+												//Se não for, imprime erro e termina
+												switch(((comp_tree_t *)$3)->type){
+													case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de if-else na AST
+												$$ = createRoot(IKS_AST_IF_ELSE);
+												//Associa a sub-árvore da expressão booleana no nodo if-else
+												appendOnChildPointer($$, $3);
+												//Associa NULL como segundo filho do nodo if-else para indicar que não tem comandos "then"
+												appendOnChildPointer($$, NULL);
+												//Associa NULL como o terceiro filho do nodo if-else para indicar que não tem comando "else"
+												appendOnChildPointer($$, NULL);
+											}
 																					
-				| TK_PR_IF '(' expressao ')' TK_PR_THEN	comando TK_PR_ELSE comando	{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina
-																						switch(((comp_tree_t *)$3)->type){
-																							case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de if-else na AST
-																						$$ = createRoot(IKS_AST_IF_ELSE);
-																						//Associa a sub-árvore da expressão booleana no nodo if-else
-																						appendOnChildPointer($$, $3);
-																						//Associa a sub-árvore do comando "then" no nodo if-else
-																						appendOnChildPointer($$, $6);
-																						//Associa a sub-árvore do comando "else" no nodo if-else
-																						appendOnChildPointer($$, $8);
-																					}
+		| TK_PR_IF '(' expressao ')' TK_PR_THEN	comando TK_PR_ELSE comando	{	//Verifica se a expressão é compatível com o tipo bool
+												//Se não for, imprime erro e termina
+												switch(((comp_tree_t *)$3)->type){
+													case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de if-else na AST
+												$$ = createRoot(IKS_AST_IF_ELSE);
+												//Associa a sub-árvore da expressão booleana no nodo if-else
+												appendOnChildPointer($$, $3);
+												//Associa a sub-árvore do comando "then" no nodo if-else
+												appendOnChildPointer($$, $6);
+												//Associa a sub-árvore do comando "else" no nodo if-else
+												appendOnChildPointer($$, $8);
+											}
 																					
-				| TK_PR_IF '(' expressao ')' TK_PR_THEN	';' TK_PR_ELSE comando		{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina
-																						switch(((comp_tree_t *)$3)->type){
-																							case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de if-else na AST
-																						$$ = createRoot(IKS_AST_IF_ELSE);
-																						//Associa a sub-árvore da expressão booleana no nodo if-else
-																						appendOnChildPointer($$, $3);
-																						//Associa NULL como segundo filho do nodo if-else para indicar que não tem comandos "then"
-																						appendOnChildPointer($$, NULL);
-																						//Associa a sub-árvore do comando "else" no nodo if-else
-																						appendOnChildPointer($$, $8);
-																					}
+		| TK_PR_IF '(' expressao ')' TK_PR_THEN	';' TK_PR_ELSE comando		{	//Verifica se a expressão é compatível com o tipo bool
+												//Se não for, imprime erro e termina
+												switch(((comp_tree_t *)$3)->type){
+													case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de if-else na AST
+												$$ = createRoot(IKS_AST_IF_ELSE);
+												//Associa a sub-árvore da expressão booleana no nodo if-else
+												appendOnChildPointer($$, $3);
+												//Associa NULL como segundo filho do nodo if-else para indicar que não tem comandos "then"
+												appendOnChildPointer($$, NULL);
+												//Associa a sub-árvore do comando "else" no nodo if-else
+												appendOnChildPointer($$, $8);
+											}
 																					
-				| TK_PR_IF '(' expressao ')' TK_PR_THEN	comando TK_PR_ELSE ';'		{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina
-																						switch(((comp_tree_t *)$3)->type){
-																							case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de if-else na AST
-																						$$ = createRoot(IKS_AST_IF_ELSE);
-																						//Associa a sub-árvore da expressão booleana no nodo if-else
-																						appendOnChildPointer($$, $3);
-																						//Associa a sub-árvore do comando "then" no nodo if-else
-																						appendOnChildPointer($$, $6);
-																						//Associa NULL como o terceiro filho do nodo if-else para indicar que não tem comando "else"
-																						appendOnChildPointer($$, NULL);
-																					}
+		| TK_PR_IF '(' expressao ')' TK_PR_THEN	comando TK_PR_ELSE ';'		{	//Verifica se a expressão é compatível com o tipo bool
+												//Se não for, imprime erro e termina
+												switch(((comp_tree_t *)$3)->type){
+													case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de if-else na AST
+												$$ = createRoot(IKS_AST_IF_ELSE);
+												//Associa a sub-árvore da expressão booleana no nodo if-else
+												appendOnChildPointer($$, $3);
+												//Associa a sub-árvore do comando "then" no nodo if-else
+												appendOnChildPointer($$, $6);
+												//Associa NULL como o terceiro filho do nodo if-else para indicar que não tem comando "else"
+												appendOnChildPointer($$, NULL);
+											}
 																					
-				| TK_PR_IF '(' expressao ')' TK_PR_THEN	';' TK_PR_ELSE ';'			{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina
-																						switch(((comp_tree_t *)$3)->type){
-																							case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de if-else na AST
-																						$$ = createRoot(IKS_AST_IF_ELSE);
-																						//Associa a sub-árvore da expressão booleana no nodo if-else
-																						appendOnChildPointer($$, $3);
-																						//Associa NULL como segundo filho do nodo if-else para indicar que não tem comandos "then"
-																						appendOnChildPointer($$, NULL);
-																						//Associa NULL como o terceiro filho do nodo if-else para indicar que não tem comando "else"
-																						appendOnChildPointer($$, NULL);
-																					}
+		| TK_PR_IF '(' expressao ')' TK_PR_THEN	';' TK_PR_ELSE ';'		{	//Verifica se a expressão é compatível com o tipo bool
+												//Se não for, imprime erro e termina
+												switch(((comp_tree_t *)$3)->type){
+													case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de if-else na AST
+												$$ = createRoot(IKS_AST_IF_ELSE);
+												//Associa a sub-árvore da expressão booleana no nodo if-else
+												appendOnChildPointer($$, $3);
+												//Associa NULL como segundo filho do nodo if-else para indicar que não tem comandos "then"
+												appendOnChildPointer($$, NULL);
+												//Associa NULL como o terceiro filho do nodo if-else para indicar que não tem comando "else"
+												appendOnChildPointer($$, NULL);
+											}
 																					
-				| TK_PR_WHILE '(' expressao ')'	TK_PR_DO comando					{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina
-																						switch(((comp_tree_t *)$3)->type){
-																							case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de while-do na AST
-																						$$ = createRoot(IKS_AST_WHILE_DO);
-																						//Associa a sub-árvore da expressão booleana no nodo while-do
-																						appendOnChildPointer($$, $3);
-																						//Associa a sub-árvore do comando no nodo while-do
-																						appendOnChildPointer($$, $6);
-																					}
+		| TK_PR_WHILE '(' expressao ')'	TK_PR_DO comando			{	//Verifica se a expressão é compatível com o tipo bool
+												//Se não for, imprime erro e termina
+												switch(((comp_tree_t *)$3)->type){
+													case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de while-do na AST
+												$$ = createRoot(IKS_AST_WHILE_DO);
+												//Associa a sub-árvore da expressão booleana no nodo while-do
+												appendOnChildPointer($$, $3);
+												//Associa a sub-árvore do comando no nodo while-do
+												appendOnChildPointer($$, $6);
+											}
 																					
-				| TK_PR_WHILE '(' expressao ')'	TK_PR_DO ';'						{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina
-																						switch(((comp_tree_t *)$3)->type){
-																							case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de while-do na AST
-																						$$ = createRoot(IKS_AST_WHILE_DO);
-																						//Associa a sub-árvore da expressão booleana no nodo while-do
-																						appendOnChildPointer($$, $3);
-																						//Associa NULL como o segundo filho do nodo while-do para indicar que não tem comando
-																						appendOnChildPointer($$, NULL);
-																					}
+		| TK_PR_WHILE '(' expressao ')'	TK_PR_DO ';'				{	//Verifica se a expressão é compatível com o tipo bool
+												//Se não for, imprime erro e termina
+												switch(((comp_tree_t *)$3)->type){
+													case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de while-do na AST
+												$$ = createRoot(IKS_AST_WHILE_DO);
+												//Associa a sub-árvore da expressão booleana no nodo while-do
+												appendOnChildPointer($$, $3);
+												//Associa NULL como o segundo filho do nodo while-do para indicar que não tem comando
+												appendOnChildPointer($$, NULL);
+											}
 																					
-				| TK_PR_DO comando TK_PR_WHILE '(' expressao ')'					{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina
-																						switch(((comp_tree_t *)$5)->type){
-																							case IKS_INT: ((comp_tree_t *)$5)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$5)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$5)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$5)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de do-while na AST
-																						$$ = createRoot(IKS_AST_DO_WHILE);
-																						//Associa a sub-árvore do comando no nodo do-while
-																						appendOnChildPointer($$, $2);
-																						//Associa a sub-árvore da expressão booleana no nodo do-while
-																						appendOnChildPointer($$, $5);
-																					}
+		| TK_PR_DO comando TK_PR_WHILE '(' expressao ')'			{	//Verifica se a expressão é compatível com o tipo bool
+												//Se não for, imprime erro e termina
+												switch(((comp_tree_t *)$5)->type){
+													case IKS_INT: ((comp_tree_t *)$5)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$5)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$5)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$5)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de do-while na AST
+												$$ = createRoot(IKS_AST_DO_WHILE);
+												//Associa a sub-árvore do comando no nodo do-while
+												appendOnChildPointer($$, $2);
+												//Associa a sub-árvore da expressão booleana no nodo do-while
+												appendOnChildPointer($$, $5);
+											}
 																					
-				| TK_PR_DO ';' TK_PR_WHILE '(' expressao ')'						{	//Verifica se a expressão é compatível com o tipo bool
-																						//Se não for, imprime erro e termina
-																						switch(((comp_tree_t *)$5)->type){
-																							case IKS_INT: ((comp_tree_t *)$5)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$5)->type = IKS_BOOL; break; //Coercao int -> bool
-																							case IKS_FLOAT: ((comp_tree_t *)$5)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$5)->type = IKS_BOOL; break; //Coercao float -> bool
-																							case IKS_BOOL: break;
-																							case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																							case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-																						}
-																						//Se for, cria nó de do-while na AST
-																						$$ = createRoot(IKS_AST_DO_WHILE);
-																						//Associa NULL como o primeiro filho do nodo do-while para indicar que não tem comando
-																						appendOnChildPointer($$, NULL);
-																						//Associa a sub-árvore da expressão booleana no nodo do-while
-																						appendOnChildPointer($$, $5);
-																					};
+		| TK_PR_DO ';' TK_PR_WHILE '(' expressao ')'				{	//Verifica se a expressão é compatível com o tipo bool
+												//Se não for, imprime erro e termina
+												switch(((comp_tree_t *)$5)->type){
+													case IKS_INT: ((comp_tree_t *)$5)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$5)->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: ((comp_tree_t *)$5)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$5)->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Nao eh possivel converter um char para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+													case IKS_STRING: printf("Nao eh possivel converter uma string para bool na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+												}
+												//Se for, cria nó de do-while na AST
+												$$ = createRoot(IKS_AST_DO_WHILE);
+												//Associa NULL como o primeiro filho do nodo do-while para indicar que não tem comando
+												appendOnChildPointer($$, NULL);
+												//Associa a sub-árvore da expressão booleana no nodo do-while
+												appendOnChildPointer($$, $5);
+											};
 
 		
 		
@@ -1189,59 +1199,59 @@ controle_fluxo:	TK_PR_IF '(' expressao ')' TK_PR_THEN comando	%prec "then"		{	//
 		
 /* Literais */
 literal:	TK_LIT_FALSE	{	//Cria o nó de literal na árvore
-								$$ = createRoot(IKS_AST_LITERAL);
-								//Adiciona o literal na tabela de símbolos e o associa ao ní de literal
-								((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_BOOL, obtemLinhaAtual());
-								((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
-								free($1);
-								//Associa o seu tipo (tipo do literal)
-								((comp_tree_t *)$$)->type = IKS_BOOL;
-							}
-			| TK_LIT_TRUE	{	//Cria o nó de literal na árvore
-								$$ = createRoot(IKS_AST_LITERAL);
-								//Adiciona o literal na tabela de símbolos e o associa ao ní de literal
-								((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_BOOL, obtemLinhaAtual());
-								((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
-								free($1);
-								//Associa o seu tipo (tipo do literal)
-								((comp_tree_t *)$$)->type = IKS_BOOL;
-							}
-			| TK_LIT_INT	{	//Cria o nó de literal na árvore
-								$$ = createRoot(IKS_AST_LITERAL);
-								//Adiciona o literal na tabela de símbolos e o associa ao ní de literal
-								((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_INT, obtemLinhaAtual());
-								((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
-								free($1);
-								//Associa o seu tipo (tipo do literal)
-								((comp_tree_t *)$$)->type = IKS_INT;
-							}
-			| TK_LIT_FLOAT	{	//Cria o nó de literal na árvore
-								$$ = createRoot(IKS_AST_LITERAL);
-								//Adiciona o literal na tabela de símbolos e o associa ao ní de literal
-								((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_FLOAT, obtemLinhaAtual());
-								((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
-								free($1);
-								//Associa o seu tipo (tipo do literal)
-								((comp_tree_t *)$$)->type = IKS_FLOAT;
-							}
-			| TK_LIT_CHAR	{	//Cria o nó de literal na árvore
-								$$ = createRoot(IKS_AST_LITERAL);
-								//Adiciona o literal na tabela de símbolos e o associa ao ní de literal
-								((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_CHAR, obtemLinhaAtual());
-								((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
-								free($1);
-								//Associa o seu tipo (tipo do literal)
-								((comp_tree_t *)$$)->type = IKS_CHAR;
-							}
-			| TK_LIT_STRING	{	//Cria o nó de literal na árvore
-								$$ = createRoot(IKS_AST_LITERAL);
-								//Adiciona o literal na tabela de símbolos e o associa ao ní de literal
-								((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_STRING, obtemLinhaAtual());
-								((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
-								free($1);
-								//Associa o seu tipo (tipo do literal)
-								((comp_tree_t *)$$)->type = IKS_STRING;
-							};
+					$$ = createRoot(IKS_AST_LITERAL);
+					//Adiciona o literal na tabela de símbolos e o associa ao nó de literal
+					((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_BOOL, obtemLinhaAtual());
+					((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
+					free($1);
+					//Associa o seu tipo (tipo do literal)
+					((comp_tree_t *)$$)->type = IKS_BOOL;
+				}
+		| TK_LIT_TRUE	{	//Cria o nó de literal na árvore
+					$$ = createRoot(IKS_AST_LITERAL);
+					//Adiciona o literal na tabela de símbolos e o associa ao nó de literal
+					((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_BOOL, obtemLinhaAtual());
+					((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
+					free($1);
+					//Associa o seu tipo (tipo do literal)
+					((comp_tree_t *)$$)->type = IKS_BOOL;
+				}
+		| TK_LIT_INT	{	//Cria o nó de literal na árvore
+					$$ = createRoot(IKS_AST_LITERAL);
+					//Adiciona o literal na tabela de símbolos e o associa ao nó de literal
+					((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_INT, obtemLinhaAtual());
+					((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
+					free($1);
+					//Associa o seu tipo (tipo do literal)
+					((comp_tree_t *)$$)->type = IKS_INT;
+				}
+		| TK_LIT_FLOAT	{	//Cria o nó de literal na árvore
+					$$ = createRoot(IKS_AST_LITERAL);
+					//Adiciona o literal na tabela de símbolos e o associa ao nó de literal
+					((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_FLOAT, obtemLinhaAtual());
+					((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
+					free($1);
+					//Associa o seu tipo (tipo do literal)
+					((comp_tree_t *)$$)->type = IKS_FLOAT;
+				}
+		| TK_LIT_CHAR	{	//Cria o nó de literal na árvore
+					$$ = createRoot(IKS_AST_LITERAL);
+					//Adiciona o literal na tabela de símbolos e o associa ao nó de literal
+					((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_CHAR, obtemLinhaAtual());
+					((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
+					free($1);
+					//Associa o seu tipo (tipo do literal)
+					((comp_tree_t *)$$)->type = IKS_CHAR;
+				}
+		| TK_LIT_STRING	{	//Cria o nó de literal na árvore
+					$$ = createRoot(IKS_AST_LITERAL);
+					//Adiciona o literal na tabela de símbolos e o associa ao nó de literal
+					((comp_tree_t *)$$)->dictPointer = insertKey(tabelaDeSimbolosAtual, $1, IKS_STRING, obtemLinhaAtual());
+					((comp_tree_t *)$$)->dictPointer->nodeType = IKS_LITERAL_ITEM;
+					free($1);
+					//Associa o seu tipo (tipo do literal)
+					((comp_tree_t *)$$)->type = IKS_STRING;
+				};
 
 		
 		
@@ -1250,99 +1260,96 @@ literal:	TK_LIT_FALSE	{	//Cria o nó de literal na árvore
 		
 		
 /* Uso de variáveis */
-var:			var_simples							{ $$ = $1; }
-				| var_vetor							{ $$ = $1; };
+var:		var_simples				{ $$ = $1; }
+		| var_vetor				{ $$ = $1; };
 				
-var_simples:	TK_IDENTIFICADOR					{	//Verifica se o identificador já foi declarado no escopo local
-														comp_dict_item_t *item = searchKey(*tabelaDeSimbolosAtual, $1);
-														if(item == NULL){
-															//Se não foi, verifica se ele já foi declarado no escopo global
-															item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
+var_simples:	TK_IDENTIFICADOR			{	//Verifica se o identificador já foi declarado no escopo local
+								comp_dict_item_t *item = searchKey(*tabelaDeSimbolosAtual, $1);
+								if(item == NULL){
+									//Se não foi, verifica se ele já foi declarado no escopo global
+									item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
+									//Se ainda não foi, imprime o erro e termina
+									if(item == NULL){
+										printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
+										exit(IKS_ERROR_UNDECLARED);
+									}
+								}
+
+								//Se foi declarado em alguns dos escopos, verifica se ele foi declarado como variável simples
+								//Se não foi declarado como variável simples, imprime o erro e termina
+								switch(item->nodeType){
+									case IKS_VARIABLE_ITEM: break;
+									case IKS_VECTOR_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como um vetor e nao como uma variavel simples.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VECTOR); break;
+									case IKS_FUNCTION_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma funcao e nao como uma variavel simples.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_FUNCTION); break;
+								}
+								free($1);
+								//Se foi, cria um nodo de identificador na AST
+								$$ = createRoot(IKS_AST_IDENTIFICADOR);
+								//Associa o tipo do nó no nodo do identificador (o tipo da variável)
+								((comp_tree_t *)$$)->type = item->valueType;
+								//Associa um ponteiro para a entrada na tabela de símbolos no nodo do identificador
+								((comp_tree_t *)$$)->dictPointer = item;
+							};
+													
+var_vetor:	TK_IDENTIFICADOR '[' expressao ']'	{	//Verifica se o identificador já foi declarado no escopo local
+								comp_dict_item_t *item = searchKey(*tabelaDeSimbolosAtual, $1);
+								if(item == NULL){
+									//Se não foi, verifica se ele já foi declarado no escopo global
+									item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
 															//Se ainda não foi, imprime o erro e termina
-															if(item == NULL){
-																printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
-																exit(IKS_ERROR_UNDECLARED);
-															}
-														}
-														//Se foi declarado em alguns dos escopos, verifica se ele foi declarado como variável
-														//Se não foi declarado como variável, imprime o erro e termina
-														if(item->nodeType != IKS_VARIABLE_ITEM){
-															printf("O identificador '%s' utilizado na linha %d nao foi declarado como uma variavel simples.\n", $1, obtemLinhaAtual());
-															exit(IKS_ERROR_VARIABLE);
-														}
-														free($1);
-														//Se foi, cria um nodo de identificador na AST
-														$$ = createRoot(IKS_AST_IDENTIFICADOR);
-														//Associa o tipo do nó no nodo do identificador (o tipo da variável)
-														((comp_tree_t *)$$)->type = item->valueType;
-														//Associa um ponteiro para a entrada na tabela de símbolos no nodo do identificador
-														((comp_tree_t *)$$)->dictPointer = item;
-													};
-													
-var_vetor:		TK_IDENTIFICADOR '[' expressao ']'	{	//Verifica se o identificador já foi declarado no escopo local
-														comp_dict_item_t *item = searchKey(*tabelaDeSimbolosAtual, $1);
-														if(item == NULL){
-															//Se não foi, verifica se ele já foi declarado no escopo global
-															item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
-															//Se ainda não foi, imprime o erro e termina
-															if(item == NULL){
-																printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
-																exit(IKS_ERROR_UNDECLARED);
-															}
-														}
-														//Se foi declarado em alguns dos escopos, verifica se ele foi declarado como variável
-														//Se não foi declarado como variável, imprime o erro e termina
-														if(item->nodeType != IKS_VECTOR_ITEM){
-															printf("O identificador '%s' utilizado na linha %d nao foi declarado como um vetor.\n", $1, obtemLinhaAtual());
-															exit(IKS_ERROR_VARIABLE);
-														}
-														//Se foi, verifica se a expressão é compatível com o tipo inteiro
-														//Se não for, imprime erro e termina
-														switch(((comp_tree_t *)$3)->type){
-															case IKS_INT: break;
-															case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$3)->type = IKS_INT; break; //Coercao float -> int
-															case IKS_BOOL: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$3)->type = IKS_INT; break; //Coercao bool -> int
-															case IKS_CHAR: printf("Nao eh possivel converter um char para int na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-															case IKS_STRING: printf("Nao eh possivel converter uma string para int na linha %d\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-														}
-														free($1);
-														//Se for, cria um nodo de vetor indexado na AST
-														$$ = createRoot(IKS_AST_VETOR_INDEXADO);
-														//Associa o tipo do nó no nodo de vetor indexado (o tipo da variável)
-														((comp_tree_t *)$$)->type = item->valueType;
-														//Cria um nodo de identificador como filho do nodo de vetor indexado
-														appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
-														//Associa um ponteiro para a entrada na tabela de símbolos no nodo do identificador
-														((comp_tree_t *)$$)->child->dictPointer = item;
-														//Associa a sub-árvore da expressão como filha do nodo de vetor indexado
-														appendOnChildPointer($$, $3);
-													};
+									if(item == NULL){
+										printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
+										exit(IKS_ERROR_UNDECLARED);
+									}
+								}
+								//Se foi declarado em alguns dos escopos, verifica se ele foi declarado como um vetor
+								//Se não foi declarado como vetor, imprime o erro e termina
+								switch(item->nodeType){
+									case IKS_VARIABLE_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma variavel simples e nao como vetor.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VARIABLE); break;
+									case IKS_VECTOR_ITEM: break;
+									case IKS_FUNCTION_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma funcao e nao como um vetor.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_FUNCTION); break;
+								}
+								//Se foi, verifica se a expressão é compatível com o tipo inteiro
+								//Se não for, imprime erro e termina
+								switch(((comp_tree_t *)$3)->type){
+									case IKS_INT: break;
+									case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$3)->type = IKS_INT; break; //Coercao float -> int
+									case IKS_BOOL: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$3)->type = IKS_INT; break; //Coercao bool -> int
+									case IKS_CHAR: printf("Nao eh possivel converter um tipo char para um tipo int na linha %d.\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+									case IKS_STRING: printf("Nao eh possivel converter um tipo string para um tipo int na linha %d.\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+								}
+								free($1);
+								//Se for, cria um nodo de vetor indexado na AST
+								$$ = createRoot(IKS_AST_VETOR_INDEXADO);
+								//Associa o tipo do nó no nodo de vetor indexado (o tipo da variável)
+								((comp_tree_t *)$$)->type = item->valueType;
+								//Cria um nodo de identificador como filho do nodo de vetor indexado
+								appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
+								//Associa um ponteiro para a entrada na tabela de símbolos no nodo do identificador
+								((comp_tree_t *)$$)->child->dictPointer = item;
+								//Associa a sub-árvore da expressão como filha do nodo de vetor indexado
+								appendOnChildPointer($$, $3);
+							};
 
 
 
 
-
-													
-													
-													
-													
 
 
 /* Tipos */
-tipo:	TK_PR_INT		{$$ = IKS_INT;}
-		| TK_PR_FLOAT	{$$ = IKS_FLOAT;}
-		| TK_PR_CHAR	{$$ = IKS_CHAR;}
-		| TK_PR_BOOL	{$$ = IKS_BOOL;}
-		| TK_PR_STRING	{$$ = IKS_STRING;};
+tipo:	TK_PR_INT	{$$ = IKS_INT;}
+	| TK_PR_FLOAT	{$$ = IKS_FLOAT;}
+	| TK_PR_CHAR	{$$ = IKS_CHAR;}
+	| TK_PR_BOOL	{$$ = IKS_BOOL;}
+	| TK_PR_STRING	{$$ = IKS_STRING;};
 
 		
 %%
 
 comp_tree_t *createRoot(int value){
-	comp_tree_t **root;
-	root = malloc(sizeof(comp_tree_t *));
-	*root = NULL;
-	createTree(root);
-	insert(root, value);
-	return *root;
+	comp_tree_t *root;
+	createTree(&root);
+	insert(&root, value);
+	return root;
 }
+
