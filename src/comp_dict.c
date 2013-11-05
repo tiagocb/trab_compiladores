@@ -51,33 +51,43 @@ comp_dict_item_t *insertKey(comp_dict_t *dict, char *key, int valueType, int lin
 	newNode->item = malloc(sizeof(comp_dict_item_t));
 	if (newNode->item == NULL) return NULL;//couldnt alloc
 
-	newNode->item->key = strdup(key);
-	newNode->item->valueType = valueType;
+	newNode->item->key = strdup(key);//store key
+	newNode->item->valueType = valueType;//store value type
+
+	//initialize value (only literals have a valid value) and number of bytes
 	if(valueType == IKS_STRING){ //cut string's double quotes 
 		newNode->item->stringValue = strdup(key);
 		newNode->item->stringValue[strlen(key) - 1] = '\0';
 		newNode->item->stringValue = newNode->item->stringValue + 1;
+		newNode->item->numBytes = 4;
 	}
-	if(valueType == IKS_CHAR){ //cut char's single quotes
-		newNode->item->charValue = key[1];
+	if(valueType == IKS_CHAR){
+		newNode->item->charValue = key[1];//cut char's single quotes
+		newNode->item->numBytes = 1;
 	}
 	if(valueType == IKS_INT){
 		newNode->item->intValue = atoi(key);
+		newNode->item->numBytes = 4;
 	}
 	if(valueType == IKS_FLOAT){
 		newNode->item->floatValue = atof(key);
+		newNode->item->numBytes = 8;
 	}
 	if(valueType == IKS_BOOL){
 		newNode->item->boolValue = (strcmp(key, "true") == 0 ? 1: 0);
+		newNode->item->numBytes = 1;
 	}
 	if(valueType == IKS_UNDEFINED){
 		newNode->item->floatValue = 0;
+		newNode->item->numBytes = 0;
 	}
-	newNode->item->nodeType = IKS_UNDEFINED_ITEM;
-	newNode->item->line = line;
-	newNode->item->numBytes = 0;
-	newNode->item->functionSymbolTable = NULL;
-	createList(&(newNode->item->parametersList));
+
+	newNode->item->nodeType = IKS_UNDEFINED_ITEM;//initialize node type
+	newNode->item->line = line;//store line
+	newNode->item->functionSymbolTable = NULL;//initialize function symbol table
+	createList(&(newNode->item->parametersList));//initialize parameters list
+	createList(&(newNode->item->dimensionList));//initialize dimensions list
+
 	newNode->next = dict->table[hashValue];
 	dict->table[hashValue] = newNode;
 	dict->numberOfElements++;
@@ -190,14 +200,24 @@ void printDictionary (comp_dict_t dict) {
 				case IKS_FUNCTION_ITEM: printf("FUNCTION, "); break;
 				case IKS_UNDEFINED_ITEM: printf("UNDEFINED, "); break;
 			}
-			switch(node->item->valueType){
-				case IKS_INT: printf("int, value: %d, ", node->item->intValue); break;
-				case IKS_FLOAT: printf("float, value: %f, ", node->item->floatValue); break;
-				case IKS_CHAR: printf("char, value: %c, ", node->item->charValue); break;
-				case IKS_STRING: printf("string, value: %s, ", node->item->stringValue); break;
-				case IKS_BOOL: printf("bool, value: %d, ", node->item->boolValue); break;
-				case IKS_UNDEFINED: printf("undefined, value: %d, ", node->item->intValue); break;
+
+			if(node->item->nodeType == IKS_LITERAL_ITEM){
+				switch(node->item->valueType){
+					case IKS_INT: printf("int, value: %d, ", node->item->intValue); break;
+					case IKS_FLOAT: printf("float, value: %f, ", node->item->floatValue); break;
+					case IKS_CHAR: printf("char, value: %c, ", node->item->charValue); break;
+					case IKS_STRING: printf("string, value: %s, ", node->item->stringValue); break;
+					case IKS_BOOL: printf("bool, value: %d, ", node->item->boolValue); break;
+					case IKS_UNDEFINED: printf("undefined, value: %d, ", node->item->intValue); break;
+				}
 			}
+	
+			if(node->item->nodeType == IKS_VECTOR_ITEM){
+				printf("dim list:");
+				printList(node->item->dimensionList);
+				printf(", ");
+			}
+
 			printf("line: %d)\n", node->item->line);
 			
 			node = node->next;

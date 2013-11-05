@@ -2,6 +2,8 @@
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include "main.h"
+	#include "register_generator.h"
+	#include "label_generator.h"
 
 	comp_tree_t *createRoot(int value);
 
@@ -9,6 +11,16 @@
 	comp_dict_item_t *simboloDaFuncaoAtual;
 	comp_dict_item_t *simboloDaFuncaoSendoChamada;
 	comp_list_t *listaDeParametrosSendoLida;
+
+
+	//Variáveis auxiliares na leitura de uma declaração de um vetor multidimensional
+	comp_dict_item_t *declVetorSendoLida;
+	comp_list_t *listaDeDimensoesSendoLida;
+
+	//Variáveis auxiliares na leitura de um uso de um vetor multidimensional
+	int contadorDeDimensoes;
+	comp_dict_item_t *vetorSendoUtilizado;
+	comp_tree_t *nodoVetor;
 %}
 
 %union{
@@ -16,6 +28,7 @@
 	void *symbolTableElement;
 	void *ast_type;
 	int tipo;
+	void *dimensionList;
 };
 
 /* Declaração dos tokens da gramática da Linguagem K */
@@ -48,10 +61,11 @@
 %token TOKEN_ERRO
 
 
-%type<ast_type> op_entrada var var_simples var_vetor literal expressao chamada_funcao lista_de_argumentos op_retorno inicio programa decl_funcao corpo bloco_de_comando lista_de_comandos ultimo_comando comando atribuicao op_saida lista_elementos_saida controle_fluxo
+%type<ast_type> op_entrada var var_simples var_vetor literal lista_de_dimensoes expressao chamada_funcao lista_de_argumentos op_retorno inicio programa decl_funcao corpo bloco_de_comando lista_de_comandos ultimo_comando comando atribuicao op_saida lista_elementos_saida controle_fluxo
 %type<symbolTableElement> cabecalho decl_var
 %type<tipo> tipo
 %type<symbol> nome_fun
+%type<dimensionList> dim_list
 
 
 %left TK_OC_AND TK_OC_OR
@@ -95,30 +109,40 @@ programa:	decl_var_global ';' programa	{ $$ = $3; }
 			
 			
 /* Uma declaração global pode ser de um vetor ou de uma variável simples. */
-decl_var_global:	decl_var						{	//Associa o número de bytes de uma variavel na tabela de símbolos
-														comp_dict_item_t *item = (comp_dict_item_t *)$1;
-														switch(item->valueType){
-															case IKS_INT:		item->numBytes = IKS_INT_SIZE; break;
-															case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; break;
-															case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; break;
-															case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; break;
-															case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; break;
-														}
-														//Associa o tipo do identificador na tabela de símbolos
-														item->nodeType = IKS_VARIABLE_ITEM;
-													}
-					| decl_var '[' TK_LIT_INT ']'	{	//Associa o número de bytes de um vetor na tabela de símbolos
-														comp_dict_item_t *item = (comp_dict_item_t *)$1;
-														switch(item->valueType){
-															case IKS_INT:		item->numBytes = IKS_INT_SIZE * atoi($3); break;
-															case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE * atoi($3); break;
-															case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE * atoi($3); break;
-															case IKS_STRING:	item->numBytes = IKS_STRING_SIZE * atoi($3); break;
-															case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE * atoi($3); break;
-														}
-														//Associa o tipo do identificador na tabela de símbolos
-														item->nodeType = IKS_VECTOR_ITEM;
-													};
+decl_var_global:	decl_var		{	//Associa o número de bytes de uma variavel na tabela de símbolos
+																comp_dict_item_t *item = (comp_dict_item_t *)$1;
+																switch(item->valueType){
+																	case IKS_INT:		item->numBytes = IKS_INT_SIZE; break;
+																	case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; break;
+																	case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; break;
+																	case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; break;
+																	case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; break;
+																}
+																//Associa o tipo do identificador na tabela de símbolos
+																item->nodeType = IKS_VARIABLE_ITEM;
+															}
+
+									| decl_var	{	//Associa o tipo do identificador na tabela de símbolos
+																comp_dict_item_t *item = (comp_dict_item_t *)$1;
+																item->nodeType = IKS_VECTOR_ITEM;
+																declVetorSendoLida = item;
+																createList(&listaDeDimensoesSendoLida);
+															}
+										dim_list	{	//Associa a lista de dimensões de um vetor multidimensional na tabela de símbolos
+																declVetorSendoLida->dimensionList = listaDeDimensoesSendoLida;
+																listaDeDimensoesSendoLida = NULL;
+																//Associa o número de bytes de um vetor na tabela de símbolos
+																switch(declVetorSendoLida->valueType){
+																	case IKS_INT:			declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_INT_SIZE; break;
+																	case IKS_FLOAT:		declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_FLOAT_SIZE; break;
+																	case IKS_CHAR:		declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_CHAR_SIZE; break;
+																	case IKS_STRING:	declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_STRING_SIZE; break;
+																	case IKS_BOOL:		declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_BOOL_SIZE; break;
+																}
+															};
+
+dim_list:		'[' TK_LIT_INT ']'						{	insertHead(&listaDeDimensoesSendoLida, atoi($2));	}
+						| '[' TK_LIT_INT ']' dim_list	{	insertHead(&listaDeDimensoesSendoLida, atoi($2));	};
 
 													
 													
@@ -337,7 +361,7 @@ atribuicao:				var_simples	'=' expressao				{	//Verifica se o tipo da expressao 
 																	//Se forem, cria um nodo de atribuicao na AST
 																	$$ = createRoot(IKS_AST_ATRIBUICAO);
 																	//Associa a sub-árvore da variável no nodo de atribuicao
-																	appendOnChildPointer($$, $1);
+																	appendOnChildPointer($$, $1);;
 																	//Associa a sub-árvore da expressão no nodo de atribuição
 																	appendOnChildPointer($$, $3);
 																};
@@ -1291,45 +1315,75 @@ var_simples:	TK_IDENTIFICADOR			{	//Verifica se o identificador já foi declarad
 								((comp_tree_t *)$$)->dictPointer = item;
 							};
 													
-var_vetor:	TK_IDENTIFICADOR '[' expressao ']'	{	//Verifica se o identificador já foi declarado no escopo local
-								comp_dict_item_t *item = searchKey(*tabelaDeSimbolosAtual, $1);
-								if(item == NULL){
-									//Se não foi, verifica se ele já foi declarado no escopo global
-									item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
-															//Se ainda não foi, imprime o erro e termina
-									if(item == NULL){
-										printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
-										exit(IKS_ERROR_UNDECLARED);
-									}
-								}
-								//Se foi declarado em alguns dos escopos, verifica se ele foi declarado como um vetor
-								//Se não foi declarado como vetor, imprime o erro e termina
-								switch(item->nodeType){
-									case IKS_VARIABLE_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma variavel simples e nao como vetor.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VARIABLE); break;
-									case IKS_VECTOR_ITEM: break;
-									case IKS_FUNCTION_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma funcao e nao como um vetor.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_FUNCTION); break;
-								}
-								//Se foi, verifica se a expressão é compatível com o tipo inteiro
-								//Se não for, imprime erro e termina
-								switch(((comp_tree_t *)$3)->type){
-									case IKS_INT: break;
-									case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$3)->type = IKS_INT; break; //Coercao float -> int
-									case IKS_BOOL: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$3)->type = IKS_INT; break; //Coercao bool -> int
-									case IKS_CHAR: printf("Nao eh possivel converter um tipo char para um tipo int na linha %d.\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-									case IKS_STRING: printf("Nao eh possivel converter um tipo string para um tipo int na linha %d.\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
-								}
-								free($1);
-								//Se for, cria um nodo de vetor indexado na AST
-								$$ = createRoot(IKS_AST_VETOR_INDEXADO);
-								//Associa o tipo do nó no nodo de vetor indexado (o tipo da variável)
-								((comp_tree_t *)$$)->type = item->valueType;
-								//Cria um nodo de identificador como filho do nodo de vetor indexado
-								appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
-								//Associa um ponteiro para a entrada na tabela de símbolos no nodo do identificador
-								((comp_tree_t *)$$)->child->dictPointer = item;
-								//Associa a sub-árvore da expressão como filha do nodo de vetor indexado
-								appendOnChildPointer($$, $3);
-							};
+var_vetor:	TK_IDENTIFICADOR		{	//Verifica se o identificador já foi declarado no escopo local
+																	comp_dict_item_t *item = searchKey(*tabelaDeSimbolosAtual, $1);
+																	if(item == NULL){
+																		//Se não foi, verifica se ele já foi declarado no escopo global
+																		item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
+																		//Se ainda não foi, imprime o erro e termina
+																		if(item == NULL){
+																			printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
+																			exit(IKS_ERROR_UNDECLARED);
+																		}
+																	}
+																	//Se foi declarado em alguns dos escopos, verifica se ele foi declarado como um vetor
+																	//Se não foi declarado como vetor, imprime o erro e termina
+																	switch(item->nodeType){
+																		case IKS_VARIABLE_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma variavel simples e nao como vetor.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VARIABLE); break;
+																		case IKS_VECTOR_ITEM: break;
+																		case IKS_FUNCTION_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma funcao e nao como um vetor.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_FUNCTION); break;
+																	}
+																	//Cria um nodo de vetor indexado na AST
+																	$$ = createRoot(IKS_AST_VETOR_INDEXADO);
+																	//Associa o tipo do nó no nodo de vetor indexado (o tipo da variável)
+																	((comp_tree_t *)$$)->type = item->valueType;
+																	//Cria um nodo de identificador como filho do nodo de vetor indexado
+																	appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
+																	//Associa um ponteiro para a entrada na tabela de símbolos no nodo do identificador
+																	((comp_tree_t *)$$)->child->dictPointer = item;
+																	free($1);
+																	contadorDeDimensoes = 0; //inicializa o contador de dimensões
+																	vetorSendoUtilizado = item;
+																	nodoVetor = $$;
+																}
+
+						lista_de_dimensoes	{	//Verifica se o número de dimensoes é maior ou menor que o número de dimensoes declarado
+																	//Se sim, imprime erro e termina
+																	if(contadorDeDimensoes != countListNodes(vetorSendoUtilizado->dimensionList)){
+																		printf("O vetor multidimensional '%s' utilizado na linha %d possui %d dimensoes e nao %d.\n", vetorSendoUtilizado->key, obtemLinhaAtual(), countListNodes(vetorSendoUtilizado->dimensionList), contadorDeDimensoes);
+																		exit(IKS_ERROR_WRONG_DIM_NUMBER);
+																	}
+																	//Associa a sub-árvore das expressões como filha do nodo de vetor indexado
+																	appendOnChildPointer(nodoVetor, $3);
+																	$$ = nodoVetor;
+																};
+
+
+lista_de_dimensoes: '[' expressao ']' 											{	//Verifica se a expressão é compatível com o tipo inteiro
+																															//Se não for, imprime erro e termina
+																															switch(((comp_tree_t *)$2)->type){
+																																case IKS_INT: break;
+																																case IKS_FLOAT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$2)->type = IKS_INT; break; //Coercao float -> int
+																																case IKS_BOOL: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$2)->type = IKS_INT; break; //Coercao bool -> int
+																																case IKS_CHAR: printf("Nao eh possivel converter um tipo char para um tipo int na linha %d.\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+																																case IKS_STRING: printf("Nao eh possivel converter um tipo string para um tipo int na linha %d.\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																															}
+																															contadorDeDimensoes++;
+																															$$ = $2;
+																														}
+										| '[' expressao ']' lista_de_dimensoes	{	//Verifica se a expressão é compatível com o tipo inteiro
+																															//Se não for, imprime erro e termina
+																															switch(((comp_tree_t *)$2)->type){
+																																case IKS_INT: break;
+																																case IKS_FLOAT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$2)->type = IKS_INT; break; //Coercao float -> int
+																																case IKS_BOOL: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$2)->type = IKS_INT; break; //Coercao bool -> int
+																																case IKS_CHAR: printf("Nao eh possivel converter um tipo char para um tipo int na linha %d.\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+																																case IKS_STRING: printf("Nao eh possivel converter um tipo string para um tipo int na linha %d.\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																															}
+																															contadorDeDimensoes++;
+																															$$ = $2;
+																															appendOnChildPointer($$, $4);
+																														};
 
 
 
@@ -1337,11 +1391,11 @@ var_vetor:	TK_IDENTIFICADOR '[' expressao ']'	{	//Verifica se o identificador j�
 
 
 /* Tipos */
-tipo:	TK_PR_INT	{$$ = IKS_INT;}
-	| TK_PR_FLOAT	{$$ = IKS_FLOAT;}
-	| TK_PR_CHAR	{$$ = IKS_CHAR;}
-	| TK_PR_BOOL	{$$ = IKS_BOOL;}
-	| TK_PR_STRING	{$$ = IKS_STRING;};
+tipo:	TK_PR_INT				{$$ = IKS_INT;}
+			| TK_PR_FLOAT		{$$ = IKS_FLOAT;}
+			| TK_PR_CHAR		{$$ = IKS_CHAR;}
+			| TK_PR_BOOL		{$$ = IKS_BOOL;}
+			| TK_PR_STRING	{$$ = IKS_STRING;};
 
 		
 %%

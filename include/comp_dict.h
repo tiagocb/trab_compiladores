@@ -39,20 +39,21 @@
  * Contém chave, tipo do valor, tipo do identificador, linha, valor (caso for literal), número de bytes (caso for variável) e ponteiro para outra tabela de símbolos (caso for função).
  */
 typedef struct {
-	char *key;			/**< Chave. */
-	int valueType;		/**< Tipo do valor. */
-	int nodeType;		/**< Tipo do nodo. */
-	int line;			/**< Linha. */
+	char *key;										/**< Chave. (VARIAVEL, VETOR, FUNCAO, LITERAL) */
+	int valueType;								/**< Tipo do valor. (VARIAVEL, VETOR, FUNCAO, LITERAL) */
+	int nodeType;									/**< Tipo do nodo. (VARIAVEL, VETOR, LITERAL, FUNCAO) */
+	int line;											/**< Linha. (VARIAVEL, VETOR, FUNCAO, LITERAL) */
 	union{
-		int intValue;				/**< Valor inteiro. */
-		float floatValue;			/**< Valor float. */
-		char charValue;				/**< Valor char. */
-		char *stringValue;			/**< Valor string. */
-		int boolValue;				/**< Valor booleano. */
+		int intValue;								/**< Valor inteiro. (LITERAL) */
+		float floatValue;						/**< Valor float. (LITERAL) */
+		char charValue;							/**< Valor char. (LITERAL) */
+		char *stringValue;					/**< Valor string. (LITERAL) */
+		int boolValue;							/**< Valor booleano. (LITERAL) */
 	};
-	int numBytes;					/**< Número de bytes. */
-	void *functionSymbolTable;		/**< Ponteiro para tabela de símbolos da função. */
-	comp_list_t *parametersList;
+	int numBytes;									/**< Número de bytes. (VARIAVEL, VETOR, LITERAL, FUNCAO) */
+	void *functionSymbolTable;		/**< Ponteiro para tabela de símbolos da função. (FUNCAO) */
+	comp_list_t *parametersList;	/**< Lista dos tipos dos parametros. (FUNCAO) */
+	comp_list_t *dimensionList;		/**< Lista dos tamanhos das dimensões de um vetor multidimensional. (VETOR) */
 } comp_dict_item_t;
 
 /**
@@ -61,7 +62,7 @@ typedef struct {
  * Contém um ponteiro para um item e um ponteiro para o próximo nodo da lista encadeada.
  */
 typedef struct _comp_dict_node_t {
-	comp_dict_item_t *item;			/**< Ponteiro para o item. */
+	comp_dict_item_t *item;					/**< Ponteiro para o item. */
 	struct _comp_dict_node_t *next;	/**< Ponteiro para o próximo nodo. */
 } comp_dict_node_t;
 
@@ -71,31 +72,31 @@ typedef struct _comp_dict_node_t {
  * Contém um vetor de listas encadeadas de itens, o tamanho deste vetor, o número de itens armazenados e um ponteiro para uma tabela pai (implementação de escopo aninhado).
  */
 typedef struct _comp_dict_t {
-	int numberOfLists;				/**< Número de listas de itens. */
-	int numberOfElements;			/**< Número de itens. */
-	comp_dict_node_t **table;		/**< Vetor de listas encadeadas de itens. */
+	int numberOfLists;						/**< Número de listas de itens. */
+	int numberOfElements;					/**< Número de itens. */
+	comp_dict_node_t **table;			/**< Vetor de listas encadeadas de itens. */
 	struct _comp_dict_t *parent;	/**< Ponteiro para tabela pai. */
 } comp_dict_t;
 
-//!  Cria a tabela de símbolos com um dado número de listas de itens. Este número é fixo durante o tempo de vida da tabela. Retorna 1 se conseguiu criar e 0 caso contrário.
+//!  Cria a tabela de símbolos com um dado número de listas de itens. Este número é fixo durante o tempo de vida da tabela
 int createDictionaty(comp_dict_t *dict, int numberOfLists, comp_dict_t *parent);
-//!  Retorna o número de itens da tabela de símbolos.
+//!  Retorna o número de itens da tabela de símbolos
 int getNumberOfKeys(comp_dict_t dict);
-//!  Função hash para selecionar uma lista para inserir/procurar um item.
+//!  Função hash para selecionar uma lista para inserir/procurar um item
 unsigned int hashFunction(int numberOfLists, char *key);
-//!  Dado uma chave, procura por ela na tabela de símbolos. Se a encontrou, retorna o item qua a contém, caso contrário, retorna NULL.
+//!  Dado uma chave, procura por ela na tabela de símbolos
 comp_dict_item_t *searchKey(comp_dict_t dict, char *key);
-//!  Insere um novo item na tabela (a chave dele deve ser única). Se conseguir inserir, retorna o ponteiro para o item, caso contrário, retorna o ponteiro do item que já tinha sido inserido.
+//!  Insere um novo item na tabela (a chave dele deve ser única). Se conseguir inserir, retorna o ponteiro para o item, caso contrário, retorna o ponteiro do item que já tinha sido inserido
 comp_dict_item_t *insertKey(comp_dict_t *dict, char *key, int valueType, int line);
-//!  Atualiza o campo de tipo de um item, retorna 1 se conseguiu atualizar e 0 caso contrário.
+//!  Atualiza o campo de tipo de um item
 int updateKey(comp_dict_t dict, char *key, int newValueType);
-//!  Remove um item da tabela, retorna 1 se conseguiu remover e 0 caso contrário.
+//!  Remove um item da tabela
 int deleteKey(comp_dict_t *dict, char *key);
-//!  Remove todos os itens da tabela de símbolos.
+//!  Remove todos os itens da tabela de símbolos
 void clearDictionaryContent(comp_dict_t *dict);
-//!  Destrói a tabela de símbolos, libera toda a memória associada a ela.
+//!  Destrói a tabela de símbolos, libera toda a memória associada a ela
 void destroyDictionary(comp_dict_t *dict);
-//!  Imprime a tabela de símbolos.
+//!  Imprime a tabela de símbolos
 void printDictionary(comp_dict_t dict);
 
 #endif
