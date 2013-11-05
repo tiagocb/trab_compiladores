@@ -11,7 +11,7 @@
 
 #include "comp_dict.h"
 
-//! Constantes para idenificar o tipo de coercao
+//! Constantes para identificar o tipo de coercao
 #define IKS_COERCAO_NENHUMA 	0
 #define IKS_COERCAO_INT_FLOAT	1
 #define IKS_COERCAO_INT_BOOL	2
@@ -26,33 +26,33 @@
  * Cada nó da árvore contém um valor associado, chave do nó, ponteiro para uma entrada do dicionário, ponteiro para o pai, para o próximo irmão e para o primeiro filho.
  */
 typedef struct _comp_tree_t {
-	int type;						/**< Tipo do nó. */
-	int value;						/**< Valor associado. */
+	int type;												/**< Tipo do nó. */
+	int value;											/**< Valor associado. */
 	comp_dict_item_t *dictPointer;	/**< Ponteiro para uma entrada do dicionário. */
-	int tipoCoercao;				/**< Tipo da coercao que deve ser realizada. */
-	struct _comp_tree_t *parent;	/**< Ponteiro para o pai. */
-	struct _comp_tree_t *brother;	/**< Ponteiro para o próximo irmão. */
-	struct _comp_tree_t *child;		/**< Ponteiro para o primeiro filho. */
+	int tipoCoercao;								/**< Tipo da coercao que deve ser realizada. */
+	struct _comp_tree_t *parent;		/**< Ponteiro para o pai. */
+	struct _comp_tree_t *brother;		/**< Ponteiro para o próximo irmão. */
+	struct _comp_tree_t *child;			/**< Ponteiro para o primeiro filho. */
 } comp_tree_t;
 
 
-//!  Cria uma nova árvore.
+//!  Cria uma nova árvore
 void createTree(comp_tree_t **tree);
-//!  Imprime a árvore utilizando o caminhamento pré-fixado.
+//!  Imprime a árvore utilizando o caminhamento pré-fixado
 void printTree(comp_tree_t *tree);
-//!  Destrói a árvore, libera toda a memória associada a ela.
+//!  Destrói a árvore, libera toda a memória associada a ela
 void destroyTree(comp_tree_t **tree);
-//!  Conta o número de nós caminhando por toda a árvore.
+//!  Conta o número de nós caminhando por toda a árvore
 int countTreeNodes(comp_tree_t *tree);
-//!  Conta as folhas da árvore.
+//!  Conta as folhas da árvore
 int countLeafs(comp_tree_t *tree);
-//!  Conta a profundidade da árvore.
+//!  Conta a profundidade da árvore
 int countDepth(comp_tree_t *tree);
-//!  Testa se a árvore está vazia.
+//!  Testa se a árvore está vazia
 int isTreeEmpty(comp_tree_t *tree);
-//! Concatena uma árvore como filha de uma raíz.
+//! Concatena uma árvore como filha de uma raíz
 void appendOnChildPointer(comp_tree_t *root, comp_tree_t *tree);
-//! Insere um nodo em uma árvore vazia.
+//! Insere um nodo em uma árvore vazia
 int insert(comp_tree_t **tree, int value);
 
 #endif

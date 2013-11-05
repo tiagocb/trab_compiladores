@@ -24,8 +24,8 @@ int main (int argc, char **argv) {
 		case 2: printf("Exaustao da memoria.\n"); exit(IKS_MEMORY_ERROR); break;
 	}
 	
-	//tabelaDeSimbolosEscopoGlobal eh um ponteiro para a tabela de símbolos global.
-	//A partir dela, pode-se acessar as outras tabelas
+	//tabelaDeSimbolosEscopoGlobal eh um ponteiro para a tabela de símbolos global. A partir dela, pode-se acessar as outras tabelas
+	printDictionary(*tabelaDeSimbolosEscopoGlobal);
 	
 	//O ponteiro 'ast' contém a AST construída 
 	//printAST(ast);
