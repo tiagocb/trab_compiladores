@@ -2,12 +2,10 @@
 #include <stdio.h>
 #include "comp_graph.h"
 
-/* Creates a new graph */
 void createGraph (comp_graph_t **graph) {
 	*graph = NULL;
 }
 
-/* Insert new node with a unique nodeId */
 int insertNode (comp_graph_t **graph, int nodeId, int value) {
 	//check if nodeId is available
 	comp_graph_t *ptAuxNode = *graph;
@@ -36,7 +34,6 @@ int insertNode (comp_graph_t **graph, int nodeId, int value) {
 	return 0;
 }
 
-/* Insert one edge */
 int insertEdge (comp_graph_t *graph, int sourceNode, int destinyNode) {
 	//check if sourceNode and destinyNode exist
 	comp_graph_t *ptAuxNode = graph;
@@ -73,7 +70,6 @@ int insertEdge (comp_graph_t *graph, int sourceNode, int destinyNode) {
 	return 2;//shouldnt reach this line
 }
 
-/* Remove all node's edges */
 int removeNodeEdges (comp_graph_t *graph, int nodeId) {
 	comp_graph_t *ptAuxNode = graph;
 	comp_graph_edge *ptAuxEdge, *ptAuxEdge2;
@@ -93,7 +89,6 @@ int removeNodeEdges (comp_graph_t *graph, int nodeId) {
 	return 1;//couldnt find node
 }
 
-/* Remove one node and all incident edges */
 int removeNode (comp_graph_t **graph, int nodeId) {
 	//remove incident edges of the node
 	comp_graph_t *ptAuxNode = *graph;
@@ -127,9 +122,7 @@ int removeNode (comp_graph_t **graph, int nodeId) {
 	return 1;//couldnt find node
 }
 
-/* Remove one edge */
 int removeEdge (comp_graph_t *graph, int sourceNodeId, int destinyNodeId) {
-	//remove edge
 	comp_graph_t *ptAuxNode = graph;
 	comp_graph_edge *ptAuxEdge, *ptAuxEdge2;
 	while (ptAuxNode != NULL) {
@@ -148,9 +141,11 @@ int removeEdge (comp_graph_t *graph, int sourceNodeId, int destinyNodeId) {
 					ptAuxEdge2 = ptAuxEdge->nextEdge;
 					ptAuxEdge->nextEdge = ptAuxEdge->nextEdge->nextEdge;
 					free(ptAuxEdge2);
+					return 0;
 				}
 				ptAuxEdge = ptAuxEdge->nextEdge;
 			}
+			return 1;//couldnt find edge
 
 		}
 		ptAuxNode = ptAuxNode->nextNode;
@@ -158,7 +153,6 @@ int removeEdge (comp_graph_t *graph, int sourceNodeId, int destinyNodeId) {
 	return 2;//couldnt find node
 }
 
-/* Updates some node's value */
 int updateNode (comp_graph_t *graph, int nodeId, int newValue) {
 	comp_graph_t *ptAuxNode = graph;
 	while (ptAuxNode != NULL) {
@@ -168,10 +162,9 @@ int updateNode (comp_graph_t *graph, int nodeId, int newValue) {
 		}
 		ptAuxNode = ptAuxNode->nextNode;
 	}
-	return 1;//couldnt finf node
+	return 1;//couldnt find node
 }
 
-/* Returns an array containing all the neighbor nodes */
 int *getNeighbors (comp_graph_t *graph, int nodeId) {
 	int *neighbors;
 
@@ -185,8 +178,9 @@ int *getNeighbors (comp_graph_t *graph, int nodeId) {
 				counter++;
 				ptAuxEdge = ptAuxEdge->nextEdge;
 			}
-			neighbors = malloc((sizeof(int) * counter) + 1);
-			if (neighbors == NULL) return NULL;//couldnt alloc
+			neighbors = malloc((sizeof(int) * counter));
+			if (neighbors == NULL && counter > 0) return NULL;//couldnt alloc 
+			if (counter == 0) return NULL;//no neighbors
 
 			int index = 0;
 			ptAuxEdge = ptAuxNode->edgeList;
@@ -194,16 +188,14 @@ int *getNeighbors (comp_graph_t *graph, int nodeId) {
 				neighbors[index++] = ptAuxEdge->destinyNode;
 				ptAuxEdge = ptAuxEdge->nextEdge;
 			}
-			neighbors[index] = -1;
 			return neighbors;
 		}
 		ptAuxNode = ptAuxNode->nextNode;
 	}
-	return NULL;//no neighbors
+	return NULL;//nodeId not found
 }
 
-/* Destroy all edges and nodes */
-void destroyGrapth (comp_graph_t **graph) {
+void destroyGraph (comp_graph_t **graph) {
 	comp_graph_t *ptAuxNode = *graph, *ptAuxNode2;
 	comp_graph_edge *ptAuxEdge, *ptAuxEdge2;
 	while (ptAuxNode != NULL) {
@@ -220,7 +212,6 @@ void destroyGrapth (comp_graph_t **graph) {
 	*graph = NULL;
 }
 
-/* Return the number of nodes */
 int countNodes (comp_graph_t *graph) {
 	int counter = 0;
 	comp_graph_t *ptAuxNode = graph;
@@ -231,7 +222,6 @@ int countNodes (comp_graph_t *graph) {
 	return counter;
 }
 
-/* Return the number of edges */
 int countEdges (comp_graph_t *graph) {
 	int counter = 0;
 	comp_graph_t *ptAuxNode = graph;
@@ -247,12 +237,10 @@ int countEdges (comp_graph_t *graph) {
 	return counter;
 }
 
-/* Return if the number of nodes is zero */
 int isEmpty (comp_graph_t *graph) {
 	return countNodes(graph) == 0;
 }
 
-/* Print graph */
 void printGraph (comp_graph_t *graph) {
 	if (isEmpty(graph)) {
 		printf("empty graph\n\n\n");
