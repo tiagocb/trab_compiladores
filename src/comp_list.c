@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "comp_list.h"
 
-/* create list */
 void createList (comp_list_t **list) {
 	*list = NULL;
 }
@@ -17,7 +16,6 @@ int countListNodes(comp_list_t *list){
 	return count;
 }
 
-/* insert node at the head of the list */
 int insertHead (comp_list_t **list, int value) {
 	comp_list_t *newNode;
 	newNode = malloc(sizeof(comp_list_t));
@@ -28,7 +26,6 @@ int insertHead (comp_list_t **list, int value) {
 	return 0;
 }
 
-/* insert node at the tail of the list */
 int insertTail (comp_list_t **list, int value) {
 	comp_list_t *newNode;
 	newNode = malloc(sizeof(comp_list_t));
@@ -46,7 +43,6 @@ int insertTail (comp_list_t **list, int value) {
 	return 0;
 }
 
-/* delete node at the specified position */
 int delete (comp_list_t **list, int position) {
 	if (*list == NULL) return 1;//cant delete
 	if (position < 1) return 2;//invalid position
@@ -74,7 +70,6 @@ int delete (comp_list_t **list, int position) {
 	return 0;
 }
 
-/* count the number of nodes */
 int count (comp_list_t *list) {
 	comp_list_t *ptAux = list;
 	int counter = 0;
@@ -85,18 +80,15 @@ int count (comp_list_t *list) {
 	return counter;
 }
 
-/* return first value of the list */
 int getFirst (comp_list_t *list) {
 	if (list == NULL) return -1;//empty list
 	return list->value;
 }
 
-/* return 1 if list is empty, 0 otherwise */
 int isListEmpty (comp_list_t *list) {
 	return list == NULL;
 }
 
-/* update node at certain position */
 int update (comp_list_t *list, int position, int newValue) {
 	if (list == NULL) return 1;//empty list
 	if (position < 1) return 2;//invalid position
@@ -117,7 +109,6 @@ int update (comp_list_t *list, int position, int newValue) {
 	return 0;
 }
 
-/* delete all list content */
 void clearList (comp_list_t **list) {
 	comp_list_t *ptAux;
 	while (*list != NULL) {
@@ -128,19 +119,16 @@ void clearList (comp_list_t **list) {
 	*list = NULL;
 }
 
-/* print list nodes */
 void printList (comp_list_t *list) {
 	if (isListEmpty(list)) {
-		printf("empty list\n\n");
+		printf("empty list\n");
 		return;
 	}
-
-	printf("Number of nodes: %d\n", count(list));
 
 	comp_list_t *ptAux = list;
 	int counter = 0;
 	while (ptAux != NULL) {
-		printf("node %d\tvalue %d\n", counter, ptAux->value);
+		printf(" [%d] value %d", counter, ptAux->value);
 		counter++;
 		ptAux = ptAux->next;
 	}
@@ -157,4 +145,14 @@ int compare(comp_list_t *list1, comp_list_t *list2){
 	
 	if(ptAux1 != NULL || ptAux2 != NULL) return 1;
 	return 0;
+}
+
+int multiplyAll(comp_list_t *list){
+	int result = 1;
+	comp_list_t *ptAux = list;
+	while(ptAux != NULL){
+		result *= ptAux->value;
+		ptAux = ptAux->next;
+	}
+	return result;
 }

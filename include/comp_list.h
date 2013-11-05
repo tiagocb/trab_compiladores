@@ -14,7 +14,7 @@
  * Cada nodo da lista encadeada contém um valor associado e um ponteiro para o próximo elemento.
  */
 typedef struct _comp_list_node {
-	int value;			/**< Valor associado. */
+	int value;										/**< Valor associado. */
 	struct _comp_list_node *next;	/**< Ponteiro para o próximo elemento. */
 } comp_list_t;
 
@@ -27,19 +27,21 @@ void clearList(comp_list_t **list);
 int countListNodes(comp_list_t *list);
 //!  Imprime a lista
 void printList(comp_list_t *list);
-//!  Insere um elemento no início da lista. Retorna 1 se a operação foi bem sucedida e 0 caso contrário
+//!  Insere um elemento no início da lista
 int insertHead (comp_list_t **list, int value);
-//!  Insere um elemento no fim da lista. Retorna 1 se a operação foi bem sucedida e 0 caso contrário
+//!  Insere um elemento no fim da lista
 int insertTail(comp_list_t **list, int value);
-//!  Deleta um elemento em uma posição específica. Retorna 1 se a operação foi bem sucedida e 0 caso contrário
+//!  Deleta um elemento em uma posição específica
 int delete(comp_list_t **list, int position);
 //!  Retorna o valor associado do primeiro elemento da lista
 int getFirst(comp_list_t *list);
 //!  Testa se a lista está vazia (não contém nenhum elemento)
 int isListEmpty(comp_list_t *list);
-//!  Atualiza o valor associado de um elemento da lista dado a sua posição. Retorna 1 se a operação foi bem sucedida e 0 caso contrário
+//!  Atualiza o valor associado de um elemento da lista dado a sua posição
 int update(comp_list_t *list, int position, int newValue);
-//!  Compara duas listas. Retorna 0 se são iguais e um se são diferentes
+//!  Compara duas listas. Retorna 0 se são iguais e 1 se são diferentes
 int compare(comp_list_t *list1, comp_list_t *list2);
+//!  Multiplica todos os valores da lista
+int multiplyAll(comp_list_t *list);
 
 #endif
