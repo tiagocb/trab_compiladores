@@ -10,6 +10,7 @@
 #define _COMP_TREE_H
 
 #include "comp_dict.h"
+#include "iloc_code.h"
 
 //! Constantes para identificar o tipo de coercao
 #define IKS_COERCAO_NENHUMA 	0
@@ -30,6 +31,8 @@ typedef struct _comp_tree_t {
 	int value;											/**< Valor associado. */
 	comp_dict_item_t *dictPointer;	/**< Ponteiro para uma entrada do dicionário. */
 	int tipoCoercao;								/**< Tipo da coercao que deve ser realizada. */
+	int resultRegister;							/**< Registrador que armazena o resultado. */
+	iloc_code *code;								/**< Código ILOC. */
 	struct _comp_tree_t *parent;		/**< Ponteiro para o pai. */
 	struct _comp_tree_t *brother;		/**< Ponteiro para o próximo irmão. */
 	struct _comp_tree_t *child;			/**< Ponteiro para o primeiro filho. */

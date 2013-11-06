@@ -54,6 +54,7 @@ typedef struct {
 	void *functionSymbolTable;		/**< Ponteiro para tabela de símbolos da função. (FUNCAO) */
 	comp_list_t *parametersList;	/**< Lista dos tipos dos parametros. (FUNCAO) */
 	comp_list_t *dimensionList;		/**< Lista dos tamanhos das dimensões de um vetor multidimensional. (VETOR) */
+	int address;									/**< Endereço. (VARIAVEL, VETOR) */
 } comp_dict_item_t;
 
 /**

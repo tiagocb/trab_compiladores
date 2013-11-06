@@ -107,6 +107,7 @@ int insert(comp_tree_t **tree, int value){
 	newNode->parent = NULL;
 	newNode->child = NULL;
 	newNode->brother = NULL;
+	newNode->code = NULL;
 	*tree = newNode;
 	return 0;
 }
