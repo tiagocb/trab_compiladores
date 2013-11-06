@@ -1,9 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "comp_dict.h"
-#include "comp_list.h"
-#include "comp_tree.h"
-#include "comp_graph.h"
 #include "main.h"
 
 void printAST(comp_tree_t *ast);
@@ -18,17 +14,18 @@ int main (int argc, char **argv) {
 	switch(resultado){
 		default:
 		case 0:
-				printf("Sucesso.\n");
+				//printf("Sucesso.\n");
 				break;
 		case 1: exit(IKS_SYNTAX_ERROR); break;
 		case 2: printf("Exaustao da memoria.\n"); exit(IKS_MEMORY_ERROR); break;
 	}
 	
-	//tabelaDeSimbolosEscopoGlobal eh um ponteiro para a tabela de símbolos global. A partir dela, pode-se acessar as outras tabelas
-	printDictionary(*tabelaDeSimbolosEscopoGlobal);
+	//'tabelaDeSimbolosEscopoGlobal' eh um ponteiro para a tabela de símbolos global. A partir dela, pode-se acessar as outras tabelas
+	//printDictionary(*tabelaDeSimbolosEscopoGlobal);
 	
 	//O ponteiro 'ast' contém a AST construída 
 	//printAST(ast);
+	printCode(ast->code);
 	
 	exit(IKS_SUCCESS);
 }

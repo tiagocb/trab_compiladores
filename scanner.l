@@ -1,7 +1,6 @@
 %{
 #include <string.h>
 #include "parser.h"
-#include "main.h"
 
 int linha = 1;
 int obtemLinhaAtual();
