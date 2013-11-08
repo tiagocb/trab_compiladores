@@ -58,6 +58,9 @@
 #define ILOC_CMPGT		45 //! Operador lógico >
 #define ILOC_CMPNE		46 //! Operador lógico !=
 
+#define ILOC_BSS			47
+#define ILOC_RARP			48
+
 #define ILOC_NO_LABEL	-1
 
 /**

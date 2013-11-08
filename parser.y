@@ -80,10 +80,13 @@
 %type<dimensionList> dim_list
 
 
-%left TK_OC_AND TK_OC_OR
+%left '|'
+%left '&'
+%left TK_OC_OR
+%left TK_OC_AND
 %left '!'
-%left '<' '>' TK_OC_NE TK_OC_LE TK_OC_GE TK_OC_EQ
-%left '&' '|'
+%left TK_OC_NE TK_OC_EQ
+%left '<' '>' TK_OC_LE TK_OC_GE
 %left '+' '-'
 %left '*' '/'
 %right "then" TK_PR_ELSE
@@ -112,7 +115,7 @@ inicializacao: /* VAZIO */	{	//Cria tabela de escopo global
 								simboloDaFuncaoAtual = NULL;
 								//Inicializa o deslocamento do escopo global e local
 								deslocamentoEscopoGlobal = 0;
-								deslocamentoEscopoLocal = 1000;
+								deslocamentoEscopoLocal = 0;
 								//Inicializa pilha de vetores
 								vectorStack = NULL;
 							};
@@ -1799,6 +1802,7 @@ var:	var_simples
 var_simples:	TK_IDENTIFICADOR
 							{	
 								//Verifica se o identificador já foi declarado no escopo local
+								int varGlobal = 0;
 								comp_dict_item_t *item = searchKey(*tabelaDeSimbolosAtual, $1);
 								if(item == NULL){
 									//Se não foi, verifica se ele já foi declarado no escopo global
@@ -1808,6 +1812,7 @@ var_simples:	TK_IDENTIFICADOR
 										printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
 										exit(IKS_ERROR_UNDECLARED);
 									}
+									varGlobal = 1;
 								}
 
 								//Se foi declarado em alguns dos escopos, verifica se ele foi declarado como variável simples
@@ -1831,6 +1836,8 @@ var_simples:	TK_IDENTIFICADOR
 								
 								//Gera código para ler variável da memória e armazenar o seu valor no registrador de resultado
 								insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, item->address, ((comp_tree_t *)$$)->resultRegister, 0);
+								if(varGlobal == 1) insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_ADDI, ((comp_tree_t *)$$)->resultRegister, ILOC_BSS, ((comp_tree_t *)$$)->resultRegister);
+								else insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_ADDI, ((comp_tree_t *)$$)->resultRegister, ILOC_RARP, ((comp_tree_t *)$$)->resultRegister);
 							};
 													
 var_vetor:		TK_IDENTIFICADOR
@@ -1922,6 +1929,7 @@ var_vetor:		TK_IDENTIFICADOR
 	
 								//soma valor com o endereço base
 								insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_ADDI, tmpRegister2, vectorRead->vectorSymbol->address, vectorRead->vectorNode->resultRegister);
+								insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_ADDI, vectorRead->vectorNode->resultRegister, ILOC_BSS, vectorRead->vectorNode->resultRegister);
 								
 								$$ = vectorRead->vectorNode;
 								clearList(&(vectorRead->resultsRegisters));
