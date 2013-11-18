@@ -3,9 +3,8 @@
  * @brief  Estrutura de grafo.
  *
  * O grafo é representado por uma lista de adjacência (cada nodo tem uma lista de arestas associada).
- * Cada nodo tem um valor associado e cada aresta tem um peso associado.
+ * Cada nodo e cada aresta possui um ponteiro para algum tipo de dado.
  * O grafo é direcionado.
- * Assume que existe no máximo uma aresta de um nodo para outro.
  */
 
 #ifndef _COMP_GRAPH_H
@@ -18,7 +17,7 @@
  */
 typedef struct _comp_graph_edge {
 	int destinyNode;										/**< Identificação do nodo destino. */
-	int weight; 												/**< Peso. */ 
+	void *data; 												/**< Dados. */ 
 	struct _comp_graph_edge *nextEdge;	/**< Ponteiro para a próxima aresta. */ 
 } comp_graph_edge;
 
@@ -29,7 +28,7 @@ typedef struct _comp_graph_edge {
  */
 typedef struct _comp_graph_t {
 	int nodeId;											/**< Chave do nodo. */ 
-	int value;											/**< Valor associado. */ 
+	void *data;											/**< Dados. */ 
 	comp_graph_edge *edgeList;			/**< Lista de arestas. */ 
 	struct _comp_graph_t *nextNode;	/**< Ponteiro para o próximo nodo. */ 
 } comp_graph_t;
@@ -37,19 +36,16 @@ typedef struct _comp_graph_t {
 
 //! Cria um grafo
 void createGraph(comp_graph_t **graph);
-
 //!  Insere um nodo no grafo.
-int insertNode(comp_graph_t **graph, int nodeId, int value);
+int insertNode(comp_graph_t **graph, int nodeId, void *data);
 //!  Insere uma aresta no grafo dado a chave do nodo de origem e do nodo destino.
-int insertEdge(comp_graph_t *graph, int sourceNode, int destinyNode);
+int insertEdge(comp_graph_t *graph, int sourceNode, int destinyNode, void *data);
 //!  Remove todas as arestas de um nodo.
 int removeNodeEdges(comp_graph_t *graph, int nodeId);
 //!  Remove um nodo do grafo
 int removeNode(comp_graph_t **graph, int nodeId);
 //!  Remove uma aresta do grafo
 int removeEdge(comp_graph_t *graph, int sourceNodeId, int destinyNodeId);
-//!  Atualiza o valor de um nodo
-int updateNode(comp_graph_t *graph, int nodeId, int newValue);
 //!  Obtém um vetor com as identificações dos vizinhos de um nodo
 int *getNeighbors(comp_graph_t *graph, int nodeId);
 //!  Destrói o grafo, libera toda a memória associada a ele

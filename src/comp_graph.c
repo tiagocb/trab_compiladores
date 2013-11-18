@@ -6,7 +6,7 @@ void createGraph (comp_graph_t **graph) {
 	*graph = NULL;
 }
 
-int insertNode (comp_graph_t **graph, int nodeId, int value) {
+int insertNode(comp_graph_t **graph, int nodeId, void *data) {
 	//check if nodeId is available
 	comp_graph_t *ptAuxNode = *graph;
 	while (ptAuxNode != NULL) {
@@ -21,7 +21,7 @@ int insertNode (comp_graph_t **graph, int nodeId, int value) {
 	newNode->edgeList = NULL;
 	newNode->nextNode = NULL;
 	newNode->nodeId = nodeId;
-	newNode->value = value;
+	newNode->data = data;
 
 	//insert node
 	if (*graph == NULL) {
@@ -34,7 +34,7 @@ int insertNode (comp_graph_t **graph, int nodeId, int value) {
 	return 0;
 }
 
-int insertEdge (comp_graph_t *graph, int sourceNode, int destinyNode) {
+int insertEdge(comp_graph_t *graph, int sourceNode, int destinyNode, void *data) {
 	//check if sourceNode and destinyNode exist
 	comp_graph_t *ptAuxNode = graph;
 	int sourceNodeFound = 0, destinyNodeFound = 0;
@@ -50,6 +50,7 @@ int insertEdge (comp_graph_t *graph, int sourceNode, int destinyNode) {
 	newEdge = malloc(sizeof(comp_graph_edge));
 	if (newEdge == NULL) return 2;//couldnt alloc
 	newEdge->destinyNode = destinyNode;
+	newEdge->data = data;
 	newEdge->nextEdge = NULL;
 
 	ptAuxNode = graph;
@@ -153,18 +154,6 @@ int removeEdge (comp_graph_t *graph, int sourceNodeId, int destinyNodeId) {
 	return 2;//couldnt find node
 }
 
-int updateNode (comp_graph_t *graph, int nodeId, int newValue) {
-	comp_graph_t *ptAuxNode = graph;
-	while (ptAuxNode != NULL) {
-		if (ptAuxNode->nodeId == nodeId) {
-			ptAuxNode->value = newValue;
-			return 0;
-		}
-		ptAuxNode = ptAuxNode->nextNode;
-	}
-	return 1;//couldnt find node
-}
-
 int *getNeighbors (comp_graph_t *graph, int nodeId) {
 	int *neighbors;
 
@@ -249,10 +238,10 @@ void printGraph (comp_graph_t *graph) {
 	comp_graph_t *ptAuxNode = graph;
 	comp_graph_edge *ptAuxEdge;
 	while (ptAuxNode != NULL) {
-		printf("%d: %d\n", ptAuxNode->nodeId, ptAuxNode->value);
+		printf("%d: %p\n", ptAuxNode->nodeId, ptAuxNode->data);
 		ptAuxEdge = ptAuxNode->edgeList;
 		while (ptAuxEdge != NULL) {
-			printf("\t%d -> %d\n", ptAuxNode->nodeId, ptAuxEdge->destinyNode);
+			printf("\t%d -> %d (%p)\n", ptAuxNode->nodeId, ptAuxEdge->destinyNode, ptAuxEdge->data);
 			ptAuxEdge = ptAuxEdge->nextEdge;
 		}
 		ptAuxNode = ptAuxNode->nextNode;
