@@ -16,21 +16,21 @@ int countListNodes(comp_list_t *list){
 	return count;
 }
 
-int insertHead (comp_list_t **list, int value) {
+int insertHead (comp_list_t **list, void *data) {
 	comp_list_t *newNode;
 	newNode = malloc(sizeof(comp_list_t));
 	if (newNode == NULL) return 1;//couldnt alloc
-	newNode->value = value;
+	newNode->data = data;
 	newNode->next = *list;
 	*list = newNode;
 	return 0;
 }
 
-int insertTail (comp_list_t **list, int value) {
+int insertTail (comp_list_t **list, void *data) {
 	comp_list_t *newNode;
 	newNode = malloc(sizeof(comp_list_t));
 	if (newNode == NULL) return 1;//couldnt alloc
-	newNode->value = value;
+	newNode->data = data;
 	newNode->next = NULL;
 
 	if (*list == NULL)
@@ -80,33 +80,13 @@ int count (comp_list_t *list) {
 	return counter;
 }
 
-int getFirst (comp_list_t *list) {
-	if (list == NULL) return -1;//empty list
-	return list->value;
+void *getFirst(comp_list_t *list) {
+	if (list == NULL) return NULL;//empty list
+	return list->data;
 }
 
 int isListEmpty (comp_list_t *list) {
 	return list == NULL;
-}
-
-int update (comp_list_t *list, int position, int newValue) {
-	if (list == NULL) return 1;//empty list
-	if (position < 1) return 2;//invalid position
-
-	comp_list_t *ptAux = list;
-	int updated = 0;
-	int counter = 1;
-	while (ptAux != NULL) {
-		if (counter == position) {
-			ptAux->value = newValue;
-			updated = 1;
-			break;
-		}
-		counter++;
-		ptAux = ptAux->next;
-	}
-	if (updated == 0) return 3;//position out of range
-	return 0;
 }
 
 void clearList (comp_list_t **list) {
@@ -128,31 +108,8 @@ void printList (comp_list_t *list) {
 	comp_list_t *ptAux = list;
 	int counter = 0;
 	while (ptAux != NULL) {
-		printf(" [%d] value %d", counter, ptAux->value);
+		printf("[%d] data %p\n", counter, ptAux->data);
 		counter++;
 		ptAux = ptAux->next;
 	}
-}
-
-int compare(comp_list_t *list1, comp_list_t *list2){
-	comp_list_t *ptAux1 = list1;
-	comp_list_t *ptAux2 = list2;
-	while(ptAux1 != NULL && ptAux2 != NULL){
-		if(ptAux1->value != ptAux2->value) return 1;
-		ptAux1 = ptAux1->next;
-		ptAux2 = ptAux2->next;
-	}
-	
-	if(ptAux1 != NULL || ptAux2 != NULL) return 1;
-	return 0;
-}
-
-int multiplyAll(comp_list_t *list){
-	int result = 1;
-	comp_list_t *ptAux = list;
-	while(ptAux != NULL){
-		result *= ptAux->value;
-		ptAux = ptAux->next;
-	}
-	return result;
 }

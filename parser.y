@@ -1,6 +1,7 @@
 %{
 	#include <stdio.h>
 	#include <stdlib.h>
+	#include <stdarg.h>
 	#include "main.h"
 	#include "register_generator.h"
 	#include "label_generator.h"
@@ -16,23 +17,27 @@
 	
 	comp_stack_t *vectorStack;
 
-	
+	//Deslocamentos de escopo local e global para definir endereço das variáveis/vetores
 	int deslocamentoEscopoGlobal;
-	int deslocamentoEscopoLocal; //Frame pointer, coinsidera apenas uma função declarada
+	int deslocamentoEscopoLocal;
 
+	//Ponteiro para a tabela de símbolos que está sendo utilizada
 	comp_dict_t *tabelaDeSimbolosAtual;
-	comp_dict_item_t *simboloDaFuncaoAtual;
+
+	//Variáveis auxiliares na leitura de uma declaração de um vetor multidimensional
+	comp_dict_item_t *simboloVetor;
+	comp_list_t *listaDeDimensoes;
+
+
+	comp_dict_item_t *simboloFuncao;
 
 	comp_dict_item_t *simboloDaFuncaoSendoChamada;
 	comp_list_t *listaDeParametrosSendoLida;
 
-	//Variáveis auxiliares na leitura de uma declaração de um vetor multidimensional
-	comp_dict_item_t *declVetorSendoLida;
-	comp_list_t *listaDeDimensoesSendoLida;
-	
-	
-	//Funções:
+
+	//Funções auxiliares
 	comp_tree_t *createRoot(int value);
+	int semanticError(int errorType, char *format, ...);
 %}
 
 %union{
@@ -73,13 +78,19 @@
 %token TOKEN_ERRO
 
 
-%type<ast_type> do_while while_do if_then_else if_then op_entrada var var_simples var_vetor literal flow_control_command lista_de_dimensoes expressao chamada_funcao lista_de_argumentos op_retorno inicio programa decl_funcao corpo bloco_de_comando lista_de_comandos ultimo_comando comando atribuicao op_saida lista_elementos_saida controle_fluxo
+%type<ast_type> do_while while_do if_then_else if_then
+%type<ast_type> op_entrada var var_simples var_vetor literal
+%type<ast_type> flow_control_command lista_de_dimensoes expressao
+%type<ast_type> chamada_funcao lista_de_argumentos op_retorno inicio
+%type<ast_type> programa decl_funcao corpo bloco_de_comando lista_de_comandos
+%type<ast_type> ultimo_comando comando atribuicao op_saida lista_elementos_saida controle_fluxo
+
 %type<symbolTableElement> cabecalho decl_var
 %type<tipo> tipo
 %type<symbol> nome_fun
 %type<dimensionList> dim_list
 
-
+//Definição da precedência dos operadores
 %left '|'
 %left '&'
 %left TK_OC_OR
@@ -96,31 +107,35 @@
 
 /* Regra inicial */
 inicio:	inicializacao programa
-								{	
-									//Atribui a AST contruída ao ponteiro da ast
-									$$ = createRoot(IKS_AST_PROGRAMA);
-									appendOnChildPointer($$, $2);
-									ast = $$;
-									concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$2)->code));
+								{
+									//Cria raiz da AST e adiciona ponteiro para o programa
+									comp_tree_t *programa = (comp_tree_t *)$2;
+									ast = createRoot(IKS_AST_PROGRAMA);
+									appendOnChildPointer(ast, programa);
+
+									//Adiciona o código gerado na raiz da AST
+									ast->code = programa->code;
 								};
 
-
 /* Artimanha para inicializar algumas estruturas importantes */
-inicializacao: /* VAZIO */	{	//Cria tabela de escopo global
-								tabelaDeSimbolosEscopoGlobal = malloc(sizeof(comp_dict_t));
-								if(tabelaDeSimbolosEscopoGlobal == NULL) exit(IKS_MEMORY_ERROR);
-								createDictionaty(tabelaDeSimbolosEscopoGlobal, 3, NULL);
-								tabelaDeSimbolosAtual = tabelaDeSimbolosEscopoGlobal;
-								//Inicializa ponteiro para simbolo da funcao sendo analizada
-								simboloDaFuncaoAtual = NULL;
-								//Inicializa o deslocamento do escopo global e local
-								deslocamentoEscopoGlobal = 0;
-								deslocamentoEscopoLocal = 0;
-								//Inicializa pilha de vetores
-								vectorStack = NULL;
-							};
-	
+inicializacao: /* VAZIO */
+								{	
+									//Cria tabela de escopo global
+									tabelaDeSimbolosEscopoGlobal = malloc(sizeof(comp_dict_t));
+									if(tabelaDeSimbolosEscopoGlobal == NULL) exit(IKS_MEMORY_ERROR);
+									createDictionaty(tabelaDeSimbolosEscopoGlobal, 3, NULL);
 
+									//Inicializa ponteiro para a tabela corrente
+									tabelaDeSimbolosAtual = tabelaDeSimbolosEscopoGlobal;
+
+									//Inicializa o deslocamento do escopo global e local
+									deslocamentoEscopoGlobal = 0;
+									deslocamentoEscopoLocal = 0;
+
+									//Inicializa pilha de vetores
+									createStack(&vectorStack);
+								};
+	
 /* O programa é uma sequência de declarações de variáveis globais e declarações de funções */
 programa:	decl_var_global ';' programa	{ $$ = $3; }
 					| decl_funcao programa				{ $$ = $1; appendOnChildPointer($$, $2); }
@@ -128,213 +143,331 @@ programa:	decl_var_global ';' programa	{ $$ = $3; }
 
 
 			
-			
-			
-			
-			
-/* Uma declaração global pode ser de um vetor ou de uma variável simples. */
-decl_var_global:	decl_var		{
-																comp_dict_item_t *item = (comp_dict_item_t *)$1;
-																//Associa o endereço da variável
-																item->address = deslocamentoEscopoGlobal;
-																//Associa o número de bytes da variavel na tabela de símbolos
-																switch(item->valueType){
-																	case IKS_INT:		item->numBytes = IKS_INT_SIZE; deslocamentoEscopoGlobal += IKS_INT_SIZE; break;
-																	case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoGlobal += IKS_FLOAT_SIZE; break;
-																	case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoGlobal += IKS_CHAR_SIZE; break;
-																	case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoGlobal += IKS_STRING_SIZE; break;
-																	case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoGlobal += IKS_BOOL_SIZE; break;
-																}
-																//Associa o tipo do identificador na tabela de símbolos
-																item->nodeType = IKS_VARIABLE_ITEM;
-															}
 
-									| decl_var	{	//Associa o tipo do identificador na tabela de símbolos
-																comp_dict_item_t *item = (comp_dict_item_t *)$1;
-																item->nodeType = IKS_VECTOR_ITEM;
-																//Associa o endereço da variável
-																item->address = deslocamentoEscopoGlobal;
-																//Cria lista de dimensoes
-																declVetorSendoLida = item;
-																createList(&listaDeDimensoesSendoLida);
-															}
 
-										dim_list	{	//Associa a lista de dimensões de um vetor multidimensional na tabela de símbolos
-																declVetorSendoLida->dimensionList = listaDeDimensoesSendoLida;
-																listaDeDimensoesSendoLida = NULL;
-																//Associa o número de bytes de um vetor na tabela de símbolos
-																switch(declVetorSendoLida->valueType){
-																	case IKS_INT:			declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_INT_SIZE; deslocamentoEscopoGlobal += declVetorSendoLida->numBytes; break;
-																	case IKS_FLOAT:		declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_FLOAT_SIZE; deslocamentoEscopoGlobal += declVetorSendoLida->numBytes; break;
-																	case IKS_CHAR:		declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_CHAR_SIZE; deslocamentoEscopoGlobal += declVetorSendoLida->numBytes; break;
-																	case IKS_STRING:	declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_STRING_SIZE; deslocamentoEscopoGlobal += declVetorSendoLida->numBytes; break;
-																	case IKS_BOOL:		declVetorSendoLida->numBytes = multiplyAll(declVetorSendoLida->dimensionList) * IKS_BOOL_SIZE; deslocamentoEscopoGlobal += declVetorSendoLida->numBytes; break;
-																}
-															};
 
-dim_list:		'[' TK_LIT_INT ']'						{	insertHead(&listaDeDimensoesSendoLida, atoi($2)); free($2);	}
-						| '[' TK_LIT_INT ']' dim_list	{	insertHead(&listaDeDimensoesSendoLida, atoi($2));	free($2); };
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Uma declaração global pode ser de um vetor ou de uma variável simples */
+decl_var_global:	decl_var
+								{
+									//Obtém a entrada da tabela de simbolos da variável declarada
+									comp_dict_item_t *item = (comp_dict_item_t *)$1;
+
+									//Associa o endereço da variável
+									item->address = deslocamentoEscopoGlobal;
+									//Associa o número de bytes da variavel na tabela de símbolos e incrementa o deslocamento global
+									switch(item->valueType){
+										case IKS_INT:			item->numBytes = IKS_INT_SIZE; deslocamentoEscopoGlobal += IKS_INT_SIZE; break;
+										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoGlobal += IKS_FLOAT_SIZE; break;
+										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoGlobal += IKS_CHAR_SIZE; break;
+										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoGlobal += IKS_STRING_SIZE; break;
+										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoGlobal += IKS_BOOL_SIZE; break;
+									}
+									//Associa o tipo do identificador na tabela de símbolos
+									item->nodeType = IKS_VARIABLE_ITEM;
+								}
+
+								| decl_var
+								{
+									//Obtém a entrada da tabela de simbolos da variável declarada
+									comp_dict_item_t *item = (comp_dict_item_t *)$1;
+
+									//Associa o endereço da variável
+									item->address = deslocamentoEscopoGlobal;
+									//Associa o tipo do identificador na tabela de símbolos
+									item->nodeType = IKS_VECTOR_ITEM;
+
+									simboloVetor = item;
+								}
+								dim_list
+								{
+									//Multiplica todos os valores das dimensoes
+									int produtorio = 0;
+									comp_list_t *ptAux = simboloVetor->dimensionList;
+									while(ptAux != NULL){
+										produtorio += (*(int *)ptAux->data);
+										ptAux = ptAux->next;
+									}
+							
+									//Associa o número de bytes do vetor na tabela de símbolos e incrementa o deslocamento global
+									switch(simboloVetor->valueType){
+										case IKS_INT:			simboloVetor->numBytes = produtorio * IKS_INT_SIZE; deslocamentoEscopoGlobal += simboloVetor->numBytes; break;
+										case IKS_FLOAT:		simboloVetor->numBytes = produtorio * IKS_FLOAT_SIZE; deslocamentoEscopoGlobal += simboloVetor->numBytes; break;
+										case IKS_CHAR:		simboloVetor->numBytes = produtorio * IKS_CHAR_SIZE; deslocamentoEscopoGlobal += simboloVetor->numBytes; break;
+										case IKS_STRING:	simboloVetor->numBytes = produtorio * IKS_STRING_SIZE; deslocamentoEscopoGlobal += simboloVetor->numBytes; break;
+										case IKS_BOOL:		simboloVetor->numBytes = produtorio * IKS_BOOL_SIZE; deslocamentoEscopoGlobal += simboloVetor->numBytes; break;
+									}
+								};
+
+dim_list:		'[' TK_LIT_INT ']'
+								{
+									int *intValue = malloc(sizeof(int));
+									*intValue = atoi($2);
+									insertHead(&(simboloVetor->dimensionList), intValue);
+									free($2);
+								}
+								| '[' TK_LIT_INT ']' dim_list
+								{
+									int *intValue = malloc(sizeof(int));
+									*intValue = atoi($2);
+									insertHead(&(simboloVetor->dimensionList), intValue);
+									free($2);
+								};
 
 													
 													
 													
 													
 
-/* Declaração de identificador */
-decl_var:	tipo ':' TK_IDENTIFICADOR	{	//Verifica se o identificador já foi declarado no escopo atual
-											//Se já foi, imprime erro e termina
-											comp_dict_item_t *item = searchKey(*tabelaDeSimbolosAtual, $3);
-											if(item != NULL){
-												printf("O identificador '%s' utilizado na declaracao da linha %d ja foi utilizado.\n", $3, obtemLinhaAtual());
-												exit(IKS_ERROR_DECLARED);
-											}
-											//Se não foi, insere o identificador na tabela de símbolos
-											item = insertKey(tabelaDeSimbolosAtual, $3, IKS_UNDEFINED, obtemLinhaAtual());
-											free($3);
-											if(item == NULL) exit(IKS_MEMORY_ERROR);
-											//Associa o seu tipo do valor do identificador na tabela de símbolos
-											item->valueType = $1;
-											$$ = item;
-										};
+
+
+
+
+
+
+/* Declaração de variável/vetor/funcao */
+decl_var:	tipo ':' TK_IDENTIFICADOR
+								{
+									//Verifica se o identificador já foi declarado no escopo atual
+									comp_dict_item_t *item = searchKey(*tabelaDeSimbolosAtual, $3);
+									if(item != NULL) semanticError(IKS_ERROR_DECLARED, "O identificador '%s' utilizado na declaracao da linha %d ja foi declarado na linha %d.", $3, obtemLinhaAtual(), item->line);
+									
+									//Insere o identificador na tabela de símbolos
+									item = insertKey(tabelaDeSimbolosAtual, $3, IKS_UNDEFINED, obtemLinhaAtual());
+									if(item == NULL) exit(IKS_MEMORY_ERROR);
+
+									//Libera memória associada à string do identificador
+									free($3);
+
+									//Associa o seu tipo do valor do identificador na tabela de símbolos
+									item->valueType = $1;
+
+									$$ = item;
+								};
 							
 							
 							
+
+
+
+
+
+
+
+
+
+
 
 
 /* Uma função é composta por um cabeçalho, parâmetros, declarações locais e um corpo. */
 decl_funcao:	cabecalho '(' parametros ')' var_locais corpo
-									{
-										$$ = createRoot(IKS_AST_FUNCAO);
-										((comp_tree_t *)$$)->dictPointer = $1;
-										appendOnChildPointer($$, $6);
-										if($6 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$6)->code));
-									}
+								{
+									comp_tree_t *corpo = (comp_tree_t *)$6;
+
+									//Cria nodo do tipo função
+									comp_tree_t *funcao = createRoot(IKS_AST_FUNCAO);
+
+									//Associa a entrada da tabela de símbolos e a sub-árvore do corpo no nodo
+									funcao->dictPointer = $1;
+									appendOnChildPointer($$, corpo);
+
+									//Adiciona o código gerado da função ao nodo
+									if(corpo != NULL) funcao->code = corpo->code;
+
+									//Inicializa deslocamento do escopo local
+									deslocamentoEscopoLocal = 0;
+
+									$$ = funcao;
+								}
 									
-							| cabecalho '(' /* VAZIO */ ')' var_locais corpo
-									{
-										$$ = createRoot(IKS_AST_FUNCAO);
-										((comp_tree_t *)$$)->dictPointer = $1;
-										appendOnChildPointer($$, $5);
-										if($5 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$5)->code));
-									};
+								| cabecalho '(' /* VAZIO */ ')' var_locais corpo
+								{
+									comp_tree_t *corpo = (comp_tree_t *)$5;
+
+									//Cria nodo do tipo função
+									comp_tree_t *funcao = createRoot(IKS_AST_FUNCAO);
+
+									//Associa a entrada da tabela de símbolos e a sub-árvore do corpo no nodo
+									funcao->dictPointer = $1;
+									appendOnChildPointer($$, corpo);
+
+									//Adiciona o código gerado da função ao nodo
+									if(corpo != NULL) funcao->code = corpo->code;
+
+									//Inicializa deslocamento do escopo local
+									deslocamentoEscopoLocal = 0;
+
+									$$ = funcao;
+								};
 
 /* O cabeçalho indica o tipo de retorno da funcao e seu nome */
-cabecalho:		decl_var	{	//Associa o tipo do identificador da função na tabela de símbolo (escopo global)
-								$$ = $1;
-								comp_dict_item_t *item = (comp_dict_item_t *)$$;
-								item->nodeType = IKS_FUNCTION_ITEM;
-								//Cria uma tabela de símbolos para a função que será analizada
-								tabelaDeSimbolosAtual = malloc(sizeof(comp_dict_t));
-								if(tabelaDeSimbolosAtual == NULL) exit(IKS_MEMORY_ERROR);
- 								createDictionaty(tabelaDeSimbolosAtual, 3, tabelaDeSimbolosEscopoGlobal);
-								item->functionSymbolTable = tabelaDeSimbolosAtual;
-								//Atualiza a variável que aponta para o item da tabela de símbolos global que contém o identificador da função sendo analizada
-								simboloDaFuncaoAtual = item;
-							};
-	
+cabecalho:		decl_var
+								{
+									//Obtém a entrada da tabela de simbolos da função declarada
+									comp_dict_item_t *item = (comp_dict_item_t *)$$;
+
+									//Associa o tipo do identificador na tabela de símbolo (escopo global)
+									item->nodeType = IKS_FUNCTION_ITEM;
+
+									//Cria uma tabela de símbolos para a função e atualiza ponteiro para tabela de símbolos corrente
+									tabelaDeSimbolosAtual = malloc(sizeof(comp_dict_t));
+									if(tabelaDeSimbolosAtual == NULL) exit(IKS_MEMORY_ERROR);
+	 								createDictionaty(tabelaDeSimbolosAtual, 3, tabelaDeSimbolosEscopoGlobal);
+
+									//Associa a tabela de símbolos da função na entrada da tabela de símbolos
+									item->functionSymbolTable = tabelaDeSimbolosAtual;
+
+									simboloFuncao = item;
+									$$ = $1;
+								};
+
+
+
+
+
+
+
+
+
 /* A lista de parâmetros contém uma sequência de declarações de variáveis */					
 parametros:	decl_var ',' parametros
-									{	
-										//Associa o tipo do identificador do parametro na tabela de símbolos
-										comp_dict_item_t *item = (comp_dict_item_t *)$1;
-										item->nodeType = IKS_VARIABLE_ITEM;
-										//Associa o endereço da variável
-										item->address = deslocamentoEscopoLocal;
-										//Associa o número de bytes de uma variavel na tabela de símbolos 
-										switch(item->valueType){
-											case IKS_INT:		item->numBytes = IKS_INT_SIZE; deslocamentoEscopoLocal += IKS_INT_SIZE; break;
-											case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoLocal += IKS_FLOAT_SIZE; break;
-											case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoLocal += IKS_CHAR_SIZE; break;
-											case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoLocal += IKS_STRING_SIZE; break;
-											case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoLocal += IKS_BOOL_SIZE; break;
-										}
-										//Insere o tipo do parâmetro na lista dos tipos dos parâmetros do item da tabela de símbolos que contém a função sendo analizada
-										insertTail(&(simboloDaFuncaoAtual->parametersList), item->valueType);
-									}
-			| ultimo_parametro;
-ultimo_parametro:	decl_var
-									{	
-										//Associa o tipo do identificador do parametro na tabela de símbolos
-										comp_dict_item_t *item = (comp_dict_item_t *)$1;
-										item->nodeType = IKS_VARIABLE_ITEM;
-										//Associa o endereço da variável
-										item->address = deslocamentoEscopoLocal;
-										//Associa o número de bytes de uma variavel na tabela de símbolos 
-										switch(item->valueType){
-											case IKS_INT:		item->numBytes = IKS_INT_SIZE; deslocamentoEscopoLocal += IKS_INT_SIZE; break;
-											case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoLocal += IKS_FLOAT_SIZE; break;
-											case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoLocal += IKS_CHAR_SIZE; break;
-											case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoLocal += IKS_STRING_SIZE; break;
-											case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoLocal += IKS_BOOL_SIZE; break;
-										}
-										//Insere o tipo do parâmetro na lista dos tipos dos parâmetros do item da tabela de símbolos que contém a função sendo analizada
-										insertTail(&(simboloDaFuncaoAtual->parametersList), item->valueType);
-									};
+								{	
+									//Obtém a entrada da tabela de simbolos da função declarada
+									comp_dict_item_t *item = (comp_dict_item_t *)$1;
 
+									//Associa o tipo do identificador na tabela de símbolos
+									item->nodeType = IKS_VARIABLE_ITEM;
+
+									//Associa o endereço da variável
+									item->address = deslocamentoEscopoLocal;
+
+									//Associa o número de bytes da variavel na tabela de símbolos e incrementa o deslocamento local
+									switch(item->valueType){
+										case IKS_INT:			item->numBytes = IKS_INT_SIZE; deslocamentoEscopoLocal += IKS_INT_SIZE; break;
+										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoLocal += IKS_FLOAT_SIZE; break;
+										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoLocal += IKS_CHAR_SIZE; break;
+										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoLocal += IKS_STRING_SIZE; break;
+										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoLocal += IKS_BOOL_SIZE; break;
+									}
+
+									//Insere o tipo do parâmetro na lista de parâmetros na tabela de símbolos
+									insertTail(&(simboloFuncao->parametersList), &(item->valueType));
+								}
+								| ultimo_parametro;
+
+ultimo_parametro:	decl_var
+								{
+									//Obtém a entrada da tabela de simbolos da função declarada
+									comp_dict_item_t *item = (comp_dict_item_t *)$1;
+
+									//Associa o tipo do identificador na tabela de símbolos
+									item->nodeType = IKS_VARIABLE_ITEM;
+
+									//Associa o endereço da variável
+									item->address = deslocamentoEscopoLocal;
+
+									//Associa o número de bytes da variavel na tabela de símbolos e incrementa o deslocamento local
+									switch(item->valueType){
+										case IKS_INT:			item->numBytes = IKS_INT_SIZE; deslocamentoEscopoLocal += IKS_INT_SIZE; break;
+										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoLocal += IKS_FLOAT_SIZE; break;
+										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoLocal += IKS_CHAR_SIZE; break;
+										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoLocal += IKS_STRING_SIZE; break;
+										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoLocal += IKS_BOOL_SIZE; break;
+									}
+
+									//Insere o tipo do parâmetro na lista de parâmetros na tabela de símbolos
+									insertTail(&(simboloFuncao->parametersList), &(item->valueType));
+								};
 
 /* Na lista de declarações locais, só é possível declarar variáveis simples */									
 var_locais:	decl_var ';' var_locais
-									{
-										//Associa o tipo do identificador da variável local na tabela de símbolos
-										comp_dict_item_t *item = (comp_dict_item_t *)$1;
-										item->nodeType = IKS_VARIABLE_ITEM;
-										//Associa o endereço da variável
-										item->address = deslocamentoEscopoLocal;
-										//Associa o número de bytes de uma variavel na tabela de símbolos 
-										switch(item->valueType){
-											case IKS_INT:		item->numBytes = IKS_INT_SIZE; deslocamentoEscopoLocal += IKS_INT_SIZE; break;
-											case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoLocal += IKS_FLOAT_SIZE; break;
-											case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoLocal += IKS_CHAR_SIZE; break;
-											case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoLocal += IKS_STRING_SIZE; break;
-											case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoLocal += IKS_BOOL_SIZE; break;
-										}
+								{
+									//Obtém a entrada da tabela de simbolos da função declarada
+									comp_dict_item_t *item = (comp_dict_item_t *)$1;
+
+									//Associa o tipo do identificador na tabela de símbolos
+									item->nodeType = IKS_VARIABLE_ITEM;
+
+									//Associa o endereço da variável
+									item->address = deslocamentoEscopoLocal;
+
+									//Associa o número de bytes da variavel na tabela de símbolos e incrementa o deslocamento local
+									switch(item->valueType){
+										case IKS_INT:			item->numBytes = IKS_INT_SIZE; deslocamentoEscopoLocal += IKS_INT_SIZE; break;
+										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoLocal += IKS_FLOAT_SIZE; break;
+										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoLocal += IKS_CHAR_SIZE; break;
+										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoLocal += IKS_STRING_SIZE; break;
+										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoLocal += IKS_BOOL_SIZE; break;
 									}
-			| /* VAZIO */;
+								}
+								| /* VAZIO */;
+
+
+
+
+
+
+
+
+
 
 
 
 			
 /* O corpo da função é uma lista de comandos entre chaves */
 corpo:	'{' lista_de_comandos '}'
-									{
-										//A tabela de símbolos atual passa a ser a tabela global novamente
-										$$ = $2;
-										tabelaDeSimbolosAtual = tabelaDeSimbolosEscopoGlobal;
-										simboloDaFuncaoAtual = NULL;
-									};
+								{
+									//A tabela de símbolos atual passa a ser a tabela global novamente
+									tabelaDeSimbolosAtual = tabelaDeSimbolosEscopoGlobal;
 
-
-
-
-
-
-
+									$$ = $2;
+								};
 
 /* Um bloco de comandos é uma sequência de comandos entre chaves */
 bloco_de_comando:	'{' lista_de_comandos '}'	
-									{
-										$$ = createRoot(IKS_AST_BLOCO);
-										appendOnChildPointer($$, $2);
-										if($2 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$2)->code));
-									};
+								{
+									comp_tree_t *listaDeComandos = (comp_tree_t *)$2;
 
+									//Cria nodo do tipo bloco
+									comp_tree_t *bloco = createRoot(IKS_AST_BLOCO);
 
-/* Uma lista de comandos é uma sequência de comandos separados por vírgula (não é necessário uma vírgula após o último comando da sequência). */
+									//Associa a sub-árvore dos comandos no nodo
+									appendOnChildPointer(bloco, $2);
+
+									//Adiciona o código gerado dos comandos ao nodo
+									if(listaDeComandos != NULL) bloco->code = listaDeComandos->code;
+
+									$$ = bloco;
+								};
+
+/* Uma lista de comandos é uma sequência de comandos separados por ';' (não é necessário um ';' após o último comando da sequência) */
 lista_de_comandos:	comando ';' lista_de_comandos	
-										{
-											$$ = $1;
-											appendOnChildPointer($$, $3);
-											if($3 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-										}
+								{
+									comp_tree_t *comando = $1;
+									comp_tree_t *comandosSubsequentes = $3;
+									appendOnChildPointer(comando, comandosSubsequentes);
+									if(comandosSubsequentes != NULL) concatCode(&(comando->code), &(comandosSubsequentes->code));
+									$$ = comando;
+								}
+								| ';' lista_de_comandos		{ $$ = $2; }
+								| ultimo_comando					{ $$ = $1; };
 										
-										| ';' lista_de_comandos		{ $$ = $2; }
-										| ultimo_comando					{ $$ = $1; };
-										
-ultimo_comando:			comando										{ $$ = $1; }
-										| /* VAZIO */							{ $$ = NULL; };
+ultimo_comando:	comando										{ $$ = $1; }
+								| /* VAZIO */							{ $$ = NULL; };
 
-
-/* Um comando pode ser: Vazio, uma chamada de função, uma operação de retorno, uma operação de saída, uma operação de entrada, 
+/* Um comando pode ser: Uma chamada de função, uma operação de retorno, uma operação de saída, uma operação de entrada, 
  * um comando de controle de fluxo, uma atribuição ou um bloco de comando.
  */
 comando:	bloco_de_comando	{ $$ = $1; }
@@ -346,48 +479,66 @@ comando:	bloco_de_comando	{ $$ = $1; }
 					| chamada_funcao	{ $$ = $1; };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 /* Atribuição, entrada, saída e retorno */
-atribuicao:				var_simples	'=' expressao				{	//Verifica se o tipo da expressao e o tipo da variável são compatíveis
+atribuicao:				var_simples	'=' expressao
+																{
+																	//Verifica se o tipo da expressao e o tipo da variável são compatíveis
 																	//Se não forem, imprime erro e termina
+																	//comp_tree_t *varNode = (comp_tree_t *)$1;
+																	//comp_tree_t *expressionNode = (comp_tree_t *)$3;
+																	//checkCompatibleTypes(varNode->type, expressionNode->type);
+
 																	switch(((comp_tree_t *)$1)->type){
 																		case IKS_INT:
 																			switch(((comp_tree_t *)$3)->type){
 																				case IKS_INT: break;
 																				case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$3)->type = IKS_INT; break; //Coercao float -> int
 																				case IKS_BOOL: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$3)->type = IKS_INT; break; //Coercao bool -> int
-																				case IKS_CHAR: printf("Na linha %d, a atribuicao de um char a uma variavel do tipo int eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																				case IKS_STRING: printf("Na linha %d, a atribuicao de uma string a uma variavel do tipo int eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																				case IKS_CHAR: semanticError(IKS_ERROR_CHAR_TO_X, "Na linha %d, a atribuicao de um char a uma variavel do tipo int eh invalida.", obtemLinhaAtual()); break;
+																				case IKS_STRING: semanticError(IKS_ERROR_STRING_TO_X, "Na linha %d, a atribuicao de uma string a uma variavel do tipo int eh invalida.\n", obtemLinhaAtual()); break;
 																			} break;
 																		case IKS_FLOAT:
 																			switch(((comp_tree_t *)$3)->type){
 																				case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_FLOAT; ((comp_tree_t *)$3)->type = IKS_FLOAT; break; //Coercao int -> float
 																				case IKS_FLOAT: break;
 																				case IKS_BOOL: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_BOOL_FLOAT; ((comp_tree_t *)$3)->type = IKS_FLOAT; break; //Coercao bool -> float
-																				case IKS_CHAR: printf("Na linha %d, a atribuicao de um char a uma variavel do tipo float eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																				case IKS_STRING: printf("Na linha %d, a atribuicao de uma string a uma variavel do tipo float eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																				case IKS_CHAR: semanticError(IKS_ERROR_CHAR_TO_X, "Na linha %d, a atribuicao de um char a uma variavel do tipo float eh invalida.\n", obtemLinhaAtual()); break;
+																				case IKS_STRING: semanticError(IKS_ERROR_STRING_TO_X, "Na linha %d, a atribuicao de uma string a uma variavel do tipo float eh invalida.\n", obtemLinhaAtual()); break;
 																			} break;
 																		case IKS_BOOL:
 																			switch(((comp_tree_t *)$3)->type){
 																				case IKS_INT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao int -> bool
 																				case IKS_FLOAT: ((comp_tree_t *)$3)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$3)->type = IKS_BOOL; break; //Coercao float -> bool
 																				case IKS_BOOL: break;
-																				case IKS_CHAR: printf("Na linha %d, a atribuicao de um char a uma variavel do tipo bool eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
-																				case IKS_STRING: printf("Na linha %d, a atribuicao de uma string a uma variavel do tipo bool eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																				case IKS_CHAR: semanticError(IKS_ERROR_CHAR_TO_X, "Na linha %d, a atribuicao de um char a uma variavel do tipo bool eh invalida.\n", obtemLinhaAtual()); break;
+																				case IKS_STRING: semanticError(IKS_ERROR_STRING_TO_X, "Na linha %d, a atribuicao de uma string a uma variavel do tipo bool eh invalida.\n", obtemLinhaAtual()); break;
 																			} break;
 																		case IKS_CHAR:
 																			switch(((comp_tree_t *)$3)->type){
-																				case IKS_INT: printf("Na linha %d, a atribuicao de um int a uma variavel do tipo char eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_FLOAT: printf("Na linha %d, a atribuicao de um float a uma variavel do tipo char eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_BOOL: printf("Na linha %d, a atribuicao de um bool a uma variavel do tipo char eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
+																				case IKS_INT: semanticError(IKS_ERROR_WRONG_TYPE, "Na linha %d, a atribuicao de um int a uma variavel do tipo char eh invalida.\n", obtemLinhaAtual()); break;
+																				case IKS_FLOAT: semanticError(IKS_ERROR_WRONG_TYPE, "Na linha %d, a atribuicao de um float a uma variavel do tipo char eh invalida.\n", obtemLinhaAtual()); break;
+																				case IKS_BOOL: semanticError(IKS_ERROR_WRONG_TYPE, "Na linha %d, a atribuicao de um bool a uma variavel do tipo char eh invalida.\n", obtemLinhaAtual()); break;
 																				case IKS_CHAR: break;
-																				case IKS_STRING: printf("Na linha %d, a atribuicao de uma string a uma variavel do tipo char eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_STRING_TO_X); break;
+																				case IKS_STRING: semanticError(IKS_ERROR_STRING_TO_X, "Na linha %d, a atribuicao de uma string a uma variavel do tipo char eh invalida.\n", obtemLinhaAtual()); break;
 																			} break;
 																		case IKS_STRING:
 																			switch(((comp_tree_t *)$3)->type){
-																				case IKS_INT: printf("Na linha %d, a atribuicao de um int a uma variavel do tipo string eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_FLOAT: printf("Na linha %d, a atribuicao de um float a uma variavel do tipo string eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_BOOL: printf("Na linha %d, a atribuicao de um bool a uma variavel do tipo string eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE); break;
-																				case IKS_CHAR: printf("Na linha %d, a atribuicao de um char a uma variavel do tipo string eh invalida.\n", obtemLinhaAtual()); exit(IKS_ERROR_CHAR_TO_X); break;
+																				case IKS_INT: semanticError(IKS_ERROR_WRONG_TYPE, "Na linha %d, a atribuicao de um int a uma variavel do tipo string eh invalida.\n", obtemLinhaAtual()); break;
+																				case IKS_FLOAT: semanticError(IKS_ERROR_WRONG_TYPE, "Na linha %d, a atribuicao de um float a uma variavel do tipo string eh invalida.\n", obtemLinhaAtual()); break;
+																				case IKS_BOOL: semanticError(IKS_ERROR_WRONG_TYPE, "Na linha %d, a atribuicao de um bool a uma variavel do tipo string eh invalida.\n", obtemLinhaAtual()); break;
+																				case IKS_CHAR: semanticError(IKS_ERROR_CHAR_TO_X, "Na linha %d, a atribuicao de um char a uma variavel do tipo string eh invalida.\n", obtemLinhaAtual()); break;
 																				case IKS_STRING: break;
 																			} break;
 																	}
@@ -476,45 +627,45 @@ op_entrada:				TK_PR_INPUT expressao	 						{
 
 op_retorno:				TK_PR_RETURN expressao					{	//Verifica se o tipo de retorno da função é compatível com o tipo da expressão
 																	//Se não for, imprime erro e termina
-																	switch(simboloDaFuncaoAtual->valueType){
+																	switch(simboloFuncao->valueType){
 																		case IKS_INT:
 																			switch(((comp_tree_t *)$2)->type){
 																				case IKS_INT: break;
 																				case IKS_FLOAT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$2)->type = IKS_INT; break; //Coercao float -> int
 																				case IKS_BOOL: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$2)->type = IKS_INT; break; //Coercao bool -> int
-																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um int, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
-																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um int, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um int, porem o valor de retorno na linha %d eh um char.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um int, porem o valor de retorno na linha %d eh um string.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																			} break;
 																		case IKS_FLOAT:
 																			switch(((comp_tree_t *)$2)->type){
 																				case IKS_INT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_INT_FLOAT; ((comp_tree_t *)$2)->type = IKS_FLOAT; break; //Coercao int -> float
 																				case IKS_FLOAT: break;
 																				case IKS_BOOL: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_BOOL_FLOAT; ((comp_tree_t *)$2)->type = IKS_FLOAT; break; //Coercao bool -> float
-																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um float, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
-																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um float, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um float, porem o valor de retorno na linha %d eh um char.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um float, porem o valor de retorno na linha %d eh um string.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																			} break;
 																		case IKS_BOOL:
 																			switch(((comp_tree_t *)$2)->type){
 																				case IKS_INT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$2)->type = IKS_BOOL; break; //Coercao int -> bool
 																				case IKS_FLOAT: ((comp_tree_t *)$2)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$2)->type = IKS_BOOL; break; //Coercao float -> bool
 																				case IKS_BOOL: break;
-																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um bool, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
-																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um bool, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um bool, porem o valor de retorno na linha %d eh um char.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um bool, porem o valor de retorno na linha %d eh um string.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																			} break;
 																		case IKS_CHAR:
 																			switch(((comp_tree_t *)$2)->type){
-																				case IKS_INT: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um int.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
-																				case IKS_FLOAT: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um float.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
-																				case IKS_BOOL: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um bool.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_INT: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um int.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_FLOAT: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um float.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_BOOL: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um bool.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																				case IKS_CHAR: break;
-																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um string.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_STRING: printf("O valor de retorno da funcao '%s' deve ser um char, porem o valor de retorno na linha %d eh um string.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																			} break;
 																		case IKS_STRING:
 																			switch(((comp_tree_t *)$2)->type){
-																				case IKS_INT: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um int.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
-																				case IKS_FLOAT: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um float.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
-																				case IKS_BOOL: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um bool.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
-																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um char.\n", simboloDaFuncaoAtual->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_INT: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um int.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_FLOAT: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um float.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_BOOL: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um bool.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
+																				case IKS_CHAR: printf("O valor de retorno da funcao '%s' deve ser um string, porem o valor de retorno na linha %d eh um char.\n", simboloFuncao->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_PAR_RETURN); break;
 																				case IKS_STRING: break;
 																			} break;
 																	}
@@ -1355,7 +1506,8 @@ lista_de_argumentos:	expressao ',' lista_de_argumentos	{	//Verifica se o tipo de
 										printf("A chamada da funcao '%s' na linha %d possui mais argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
 										exit(IKS_ERROR_EXCESS_ARGS);
 									}
-									switch(listaDeParametrosSendoLida->value){
+									int tipoDoArgumento = *((int *)listaDeParametrosSendoLida->data);
+									switch(tipoDoArgumento){
 										case IKS_INT:
 											switch(((comp_tree_t *)$1)->type){
 												case IKS_INT: break;
@@ -1407,7 +1559,8 @@ lista_de_argumentos:	expressao ',' lista_de_argumentos	{	//Verifica se o tipo de
 										printf("A chamada da funcao '%s' na linha %d possui mais argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
 										exit(IKS_ERROR_EXCESS_ARGS);
 									}
-									switch(listaDeParametrosSendoLida->value){
+									int tipoDoArgumento = *((int *)listaDeParametrosSendoLida->data);
+									switch(tipoDoArgumento){
 										case IKS_INT:
 											switch(((comp_tree_t *)$1)->type){
 												case IKS_INT: break;
@@ -1906,11 +2059,11 @@ var_vetor:		TK_IDENTIFICADOR
 								while(counter <= vectorRead->dimensionCounter){
 									if(counter == 1){
 										tmpRegister1 = getRegister();
-										insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_I2I, ptAccess->value, tmpRegister1, 0);
+										insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_I2I, *((int *)ptAccess->data), tmpRegister1, 0);
 									}else{
 										tmpRegister2 = getRegister();
-										insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_MULTI, tmpRegister1, ptDimension->value, tmpRegister2);
-										insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_ADD, tmpRegister2, ptAccess->value, tmpRegister1);
+										insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_MULTI, tmpRegister1, *((int *)ptDimension->data), tmpRegister2);
+										insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_ADD, tmpRegister2, *((int *)ptAccess->data), tmpRegister1);
 									}
 									ptAccess = ptAccess->next;
 									ptDimension = ptDimension->next;
@@ -1959,7 +2112,7 @@ lista_de_dimensoes: '[' expressao ']'
 								VectorReadingInfo *vectorBeingRead = (VectorReadingInfo *)getTop(vectorStack);
 								
 								//Insere o registrador de resultado da expressão na lista de registradores de resultados
-								insertHead(&(vectorBeingRead->resultsRegisters), ((comp_tree_t *)$2)->resultRegister);
+								insertHead(&(vectorBeingRead->resultsRegisters), &(((comp_tree_t *)$2)->resultRegister));
 
 								vectorBeingRead->dimensionCounter++;
 								$$ = $2;
@@ -1984,7 +2137,7 @@ lista_de_dimensoes: '[' expressao ']'
 								VectorReadingInfo *vectorBeingRead = (VectorReadingInfo *)getTop(vectorStack);
 
 								//Insere o registrador de resultado da expressão na lista de registradores de resultados
-								insertHead(&(vectorBeingRead->resultsRegisters), ((comp_tree_t *)$2)->resultRegister);
+								insertHead(&(vectorBeingRead->resultsRegisters), &(((comp_tree_t *)$2)->resultRegister));
 
 								vectorBeingRead->dimensionCounter++;
 								$$ = $2;
@@ -2015,4 +2168,19 @@ comp_tree_t *createRoot(int value){
 	insert(&root, value);
 	return root;
 }
+
+/* Imprime a mensagem de erro semântico e termina */
+int semanticError(int errorType, char *format, ...){
+	va_list ap;
+	char buffer[500];
+	va_start(ap, format);
+
+	vsnprintf(buffer, 500, format, ap);
+	printf("%s\n", buffer);
+
+	va_end(ap);
+	exit(errorType);
+}
+
+
 
