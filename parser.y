@@ -70,6 +70,11 @@
   //Durante a leitura de uma função, esta variável aponta para a sua entrada na tabela de símbolos do escopo global
   comp_dict_item_t *simboloFuncao;
 
+	/* Para que logo no início do programa a função main seja a primeira a ser executada,
+	 * é necessário conhecer o rótulo da função main. Este rótulo é armazenado na variável abaixo
+   */
+	int mainFunctionLabel = -1;
+
 	//Funções auxiliares
 	comp_tree_t *createRoot(int value);
 	int semanticError(int errorType, char *format, ...);
@@ -148,13 +153,17 @@ inicio:	inicializacao programa
 									appendOnChildPointer(ast, programa);
 
 									//Insere inicialização do fp no inicio do código gerado
-									iloc_code *initFramePointerCode = NULL;
-									insert(&(initFramePointerCode), "i2i sp => fp");
+									iloc_code *programCode = NULL;
+									insert(&(programCode), "i2i sp => fp");
+	
+									//Insere um jump para a função main (se ela existir) no início do código
+									if(mainFunctionLabel != -1)
+										insert(&(programCode), "jumpI -> L%d", mainFunctionLabel);
 									
-									if(programa != NULL) concatCode(&(initFramePointerCode), &(programa->code));
+									if(programa != NULL) concatCode(&(programCode), &(programa->code));
 
 									//Adiciona o código gerado na raiz da AST
-									ast->code = initFramePointerCode;
+									ast->code = programCode;
 								};
 
 /* Artimanha para inicializar algumas estruturas importantes */
@@ -345,6 +354,10 @@ decl_funcao:	cabecalho '(' parametros ')' var_locais corpo
 									//Adiciona um comando de retorno para a função chamadora
 									insert(&(funtionCode), "jump -> fp \t\t // fim de %s", funcao->dictPointer->key);
 
+									//Verifica se a função declarada é a main, caso for, obtém o seu label para utilizá-lo no início do código depois
+									if(strcmp(funcao->dictPointer->key, "main") == 0)
+										mainFunctionLabel = funcao->dictPointer->functionLabel;
+
 									funcao->code = funtionCode;
 									$$ = funcao;
 								}
@@ -372,6 +385,10 @@ decl_funcao:	cabecalho '(' parametros ')' var_locais corpo
 
 									//Adiciona um comando de retorno para a função chamadora
 									insert(&(funtionCode), "jump -> fp \t\t // fim de %s", funcao->dictPointer->key);
+
+									//Verifica se a função declarada é a main, caso for, obtém o seu label para utilizá-lo no início do código depois
+									if(strcmp(funcao->dictPointer->key, "main") == 0)
+										mainFunctionLabel = funcao->dictPointer->functionLabel;
 
 									funcao->code = funtionCode;
 									$$ = funcao;
@@ -1628,7 +1645,7 @@ chamada_funcao:		nome_fun '(' lista_de_argumentos ')'
 									
 									//Armazena valor retornado pela função no registrador de resultado
 									((comp_tree_t *)$$)->resultRegister = getRegister();
-									insert(&(((comp_tree_t *)$$)->code), "loadAI fp, %d => r%d \t\t obtendo valor de retorno", AR_RETURN_VALUE_OFFSET, ((comp_tree_t *)$$)->resultRegister);
+									insert(&(((comp_tree_t *)$$)->code), "loadAI fp, %d => r%d \t\t // obtendo valor de retorno", AR_RETURN_VALUE_OFFSET, ((comp_tree_t *)$$)->resultRegister);
 									
 									//Remove registro de ativação da pilha (incrementa o fp)
 									insert(&(((comp_tree_t *)$$)->code), "addI fp, %d => fp \t\t // destroi RA", simboloFuncao->activationRecordSize);
@@ -1681,7 +1698,7 @@ chamada_funcao:		nome_fun '(' lista_de_argumentos ')'
 									
 									//Armazena valor retornado pela função no registrador de resultado
 									((comp_tree_t *)$$)->resultRegister = getRegister();
-									insert(&(((comp_tree_t *)$$)->code), "loadAI fp, %d => r%d \t\t obtendo valor de retorno", AR_RETURN_VALUE_OFFSET, ((comp_tree_t *)$$)->resultRegister);
+									insert(&(((comp_tree_t *)$$)->code), "loadAI fp, %d => r%d \t\t // obtendo valor de retorno", AR_RETURN_VALUE_OFFSET, ((comp_tree_t *)$$)->resultRegister);
 									
 									//Remove registro de ativação da pilha (incrementa o fp)
 									insert(&(((comp_tree_t *)$$)->code), "addI fp, %d => fp \t\t // destroi RA", simboloFuncao->activationRecordSize);
