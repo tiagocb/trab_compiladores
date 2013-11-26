@@ -57,8 +57,8 @@ comp_dict_item_t *insertKey(comp_dict_t *dict, char *key, int valueType, int lin
 	//initialize value (only literals have a valid value) and number of bytes
 	if(valueType == IKS_STRING){ //cut string's double quotes 
 		newNode->item->stringValue = strdup(key);
-		newNode->item->stringValue[strlen(key) - 1] = '\0';
-		newNode->item->stringValue = newNode->item->stringValue + 1;
+		newNode->item->stringValue[0] = ' ';
+		newNode->item->stringValue[strlen(key) - 1] = ' ';
 		newNode->item->numBytes = 4;
 	}
 	if(valueType == IKS_CHAR){
