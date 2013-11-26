@@ -23,15 +23,14 @@
 #define IKS_ERROR_WRONG_TYPE				6  //! tipos incompatíveis
 #define IKS_ERROR_STRING_TO_X				7  //! coerção impossível do tipo string
 #define IKS_ERROR_CHAR_TO_X					8  //! coerção impossível do tipo char
-#define IKS_ERROR_MISSING_ARGS			9  //! poucos argumentos
-#define IKS_ERROR_EXCESS_ARGS				10 //! muitos argumentos
-#define IKS_ERROR_WRONG_TYPE_ARGS		11 //! tipos dos argumentos são incompatíveis
-#define IKS_ERROR_WRONG_PAR_INPUT		12 //! parâmetro não é identificador
-#define IKS_ERROR_WRONG_PAR_OUTPUT	13 //! parâmetro não é literal string ou expressão
-#define IKS_ERROR_WRONG_PAR_RETURN	14 //! parâmetro não é expressão compatível com tipo de retorno
-#define IKS_ERROR_WRONG_DIM_NUMBER	15 //! número de dimensões utilizado não é igual ao número declarado
-#define IKS_SYNTAX_ERROR    				16 //! erro sintático
-#define IKS_MEMORY_ERROR						17 //! exaustão da memória
+#define IKS_ERROR_WRONG_NUM_ARGS		9  //! número errado de argumentos
+#define IKS_ERROR_WRONG_TYPE_ARGS		10 //! tipos dos argumentos são incompatíveis
+#define IKS_ERROR_WRONG_PAR_INPUT		11 //! parâmetro não é identificador
+#define IKS_ERROR_WRONG_PAR_OUTPUT	12 //! parâmetro não é literal string ou expressão
+#define IKS_ERROR_WRONG_PAR_RETURN	13 //! parâmetro não é expressão compatível com tipo de retorno
+#define IKS_ERROR_WRONG_DIM_NUMBER	14 //! número de dimensões utilizado não é igual ao número declarado
+#define IKS_SYNTAX_ERROR    				15 //! erro sintático
+#define IKS_MEMORY_ERROR						16 //! exaustão da memória
 
 comp_dict_t *tabelaDeSimbolosEscopoGlobal;
 comp_tree_t *ast;

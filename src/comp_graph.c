@@ -6,7 +6,7 @@ void createGraph (comp_graph_t **graph) {
 	*graph = NULL;
 }
 
-int insertNode(comp_graph_t **graph, int nodeId, void *data) {
+int insertGraphNode(comp_graph_t **graph, int nodeId, void *data) {
 	//check if nodeId is available
 	comp_graph_t *ptAuxNode = *graph;
 	while (ptAuxNode != NULL) {

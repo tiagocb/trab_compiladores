@@ -98,7 +98,7 @@ void appendOnChildPointer(comp_tree_t *root, comp_tree_t *tree){
 	}
 }
 
-int insert(comp_tree_t **tree, int value){
+int insertNode(comp_tree_t **tree, int value){
 	comp_tree_t *newNode;
 	newNode = malloc(sizeof(comp_tree_t));
 	if(newNode == NULL) return 1;//couldnt alloc

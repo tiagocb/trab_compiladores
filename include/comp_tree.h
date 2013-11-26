@@ -56,6 +56,6 @@ int isTreeEmpty(comp_tree_t *tree);
 //! Concatena uma árvore como filha de uma raíz
 void appendOnChildPointer(comp_tree_t *root, comp_tree_t *tree);
 //! Insere um nodo em uma árvore vazia
-int insert(comp_tree_t **tree, int value);
+int insertNode(comp_tree_t **tree, int value);
 
 #endif

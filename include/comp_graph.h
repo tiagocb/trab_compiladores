@@ -37,7 +37,7 @@ typedef struct _comp_graph_t {
 //! Cria um grafo
 void createGraph(comp_graph_t **graph);
 //!  Insere um nodo no grafo.
-int insertNode(comp_graph_t **graph, int nodeId, void *data);
+int insertGraphNode(comp_graph_t **graph, int nodeId, void *data);
 //!  Insere uma aresta no grafo dado a chave do nodo de origem e do nodo destino.
 int insertEdge(comp_graph_t *graph, int sourceNode, int destinyNode, void *data);
 //!  Remove todas as arestas de um nodo.

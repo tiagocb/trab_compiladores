@@ -1,0 +1,16 @@
+int: f1(){}
+char : f2(int : p1){}
+float : f3(float : p1, bool : p2, float : p3){ f1(); }
+int : f4() int: l1; float: l2; int: l3; char: l4; bool: l5; float: l6;{}
+bool : f5(int : p1, float : p2, char : p3, bool : p4) int: l1; float: l2; int: l3; char: l4; bool: l5; float: l6;{}
+
+int: v1;
+float: v2;
+string: v3;
+bool: v4;
+int: v5;
+
+int : f6() char: l1; char: l2; char: l3; float: l4; float: l5; {
+	l4 = f3(3, f3(3, f3(3, f3(3, f3(3, f3(3, f1(), f3(f1(), f3(3, f3(3, f1(), f3(f1(), f1(), 5)), f3(f1(), f1(), 5)), f3(3, f1(), f3(f1(), f1(), 5)))), f3(f1(), f1(), 5)), f3(f1(), f1(), 5)), f3(f1(), f1(), f3(3, f1(), f3(f3(3, f1(), f3(f1(), f1(), 5)), f1(), 5)))), f3(f1(), f1(), 5)), f3(f3(3, f1(), f3(f1(), f1(), 5)), f1(), 5))
+
+}

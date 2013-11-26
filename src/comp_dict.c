@@ -85,8 +85,9 @@ comp_dict_item_t *insertKey(comp_dict_t *dict, char *key, int valueType, int lin
 	newNode->item->nodeType = IKS_UNDEFINED_ITEM;//initialize node type
 	newNode->item->line = line;//store line
 	newNode->item->functionSymbolTable = NULL;//initialize function symbol table
-	createList(&(newNode->item->parametersList));//initialize parameters list
+	newNode->item->parametersList = NULL;//initialize parameters list
 	createList(&(newNode->item->dimensionList));//initialize dimensions list
+	createList(&(newNode->item->localVars));//initialize local vars list
 
 	newNode->next = dict->table[hashValue];
 	dict->table[hashValue] = newNode;

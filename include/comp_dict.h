@@ -12,7 +12,7 @@
 #include "comp_list.h"
 
 //! Tipos dos valores dos elementos da tabela de símbolos
-#define IKS_INT			1
+#define IKS_INT				1
 #define IKS_FLOAT  		2
 #define IKS_CHAR   		3
 #define IKS_STRING 		4
@@ -54,7 +54,10 @@ typedef struct {
 	void *functionSymbolTable;		/**< Ponteiro para tabela de símbolos da função. (FUNCAO) */
 	comp_list_t *parametersList;	/**< Lista dos tipos dos parametros. (FUNCAO) */
 	comp_list_t *dimensionList;		/**< Lista dos tamanhos das dimensões de um vetor multidimensional. (VETOR) */
-	int address;									/**< Endereço. (VARIAVEL, VETOR) */
+	int address;									/**< Deslocamento. (VARIAVEL, VETOR) */
+	comp_list_t *localVars;				/**< Lista dos tipos das variáveis locais. (FUNCAO) */
+	int functionLabel;						/**< Rótulo que identifica o início do código da função. (FUNCAO) */
+	int activationRecordSize;			/**< Tamanho do registro de ativação. (FUNCAO) */
 } comp_dict_item_t;
 
 /**

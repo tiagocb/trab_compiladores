@@ -6,7 +6,41 @@
 	#include "register_generator.h"
 	#include "label_generator.h"
 	#include "comp_stack.h"
+
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	///////////////////////////     ETAPA 6     //////////////////////////////
+
+	//Definição dos tamanhos de alguns campos no registro de ativação
 	
+	#define AR_RETURN_ADDRESS_SIZE 4
+	#define AR_STATIC_LINK_SIZE 4
+	#define AR_DYNAMIC_LINK_SIZE 4
+	#define AR_MACHINE_STATE_SIZE 20
+	
+	//Deslocamento do campo do valor de retorno no RA 
+	
+	#define AR_RETURN_VALUE_OFFSET -32
+	
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+
 	//Dados auxiliares na leitura de um uso de vetor multidimensional
 	typedef struct {
 		int dimensionCounter;
@@ -14,12 +48,10 @@
 		comp_tree_t *vectorNode;
 		comp_list_t *resultsRegisters;
 	} VectorReadingInfo;
-	
 	comp_stack_t *vectorStack;
 
 	//Deslocamentos de escopo local e global para definir endereço das variáveis/vetores
 	int deslocamentoEscopoGlobal;
-	int deslocamentoEscopoLocal;
 
 	//Ponteiro para a tabela de símbolos que está sendo utilizada
 	comp_dict_t *tabelaDeSimbolosAtual;
@@ -28,12 +60,15 @@
 	comp_dict_item_t *simboloVetor;
 	comp_list_t *listaDeDimensoes;
 
-
 	comp_dict_item_t *simboloFuncao;
 
-	comp_dict_item_t *simboloDaFuncaoSendoChamada;
-	comp_list_t *listaDeParametrosSendoLida;
-
+	//Dados auxiliares na leitura de uma chamada de funcao
+	typedef struct {
+		comp_dict_item_t *functionSymbol;
+		int argumentsCounter;
+		comp_list_t *argumentsTrees;
+	} FunctionCallInfo;
+	comp_stack_t *functionStack;
 
 	//Funções auxiliares
 	comp_tree_t *createRoot(int value);
@@ -85,9 +120,8 @@
 %type<ast_type> programa decl_funcao corpo bloco_de_comando lista_de_comandos
 %type<ast_type> ultimo_comando comando atribuicao op_saida lista_elementos_saida controle_fluxo
 
-%type<symbolTableElement> cabecalho decl_var
+%type<symbolTableElement> cabecalho decl_var nome_fun
 %type<tipo> tipo
-%type<symbol> nome_fun
 %type<dimensionList> dim_list
 
 //Definição da precedência dos operadores
@@ -112,9 +146,40 @@ inicio:	inicializacao programa
 									comp_tree_t *programa = (comp_tree_t *)$2;
 									ast = createRoot(IKS_AST_PROGRAMA);
 									appendOnChildPointer(ast, programa);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									///////////////////////////     ETAPA 6     //////////////////////////////
+
+									//Adiciona o comando de inicializacao do fp como primeiro comando do programa
+									
+									//Insere inicialização do fp no inicio do código gerado
+									iloc_code *initFramePointerCode = NULL;
+									insert(&(initFramePointerCode), "i2i sp => fp");
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									
+									if(programa != NULL) concatCode(&(initFramePointerCode), &(programa->code));
 
 									//Adiciona o código gerado na raiz da AST
-									ast->code = programa->code;
+									ast->code = initFramePointerCode;
 								};
 
 /* Artimanha para inicializar algumas estruturas importantes */
@@ -130,15 +195,24 @@ inicializacao: /* VAZIO */
 
 									//Inicializa o deslocamento do escopo global e local
 									deslocamentoEscopoGlobal = 0;
-									deslocamentoEscopoLocal = 0;
 
 									//Inicializa pilha de vetores
 									createStack(&vectorStack);
+									
+									//Inicializa pilha de funcoes
+									createStack(&functionStack);
 								};
 	
 /* O programa é uma sequência de declarações de variáveis globais e declarações de funções */
 programa:	decl_var_global ';' programa	{ $$ = $3; }
-					| decl_funcao programa				{ $$ = $1; appendOnChildPointer($$, $2); }
+					| decl_funcao programa
+								{
+									$$ = $1;
+									appendOnChildPointer($$, $2);
+
+									//Concatena o código das funcoes
+									if((comp_tree_t *)$2 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$2)->code));
+								}
 					| /* VAZIO */									{ $$ = NULL; };
 
 
@@ -176,7 +250,7 @@ decl_var_global:	decl_var
 										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoGlobal += IKS_BOOL_SIZE; break;
 									}
 									//Associa o tipo do identificador na tabela de símbolos
-									item->nodeType = IKS_VARIABLE_ITEM;
+									item->nodeType = IKS_VARIABLE_ITEM;				
 								}
 
 								| decl_var
@@ -276,19 +350,50 @@ decl_funcao:	cabecalho '(' parametros ')' var_locais corpo
 								{
 									comp_tree_t *corpo = (comp_tree_t *)$6;
 
-									//Cria nodo do tipo função
+									//Cria nodo na AST do tipo função
 									comp_tree_t *funcao = createRoot(IKS_AST_FUNCAO);
 
 									//Associa a entrada da tabela de símbolos e a sub-árvore do corpo no nodo
 									funcao->dictPointer = $1;
 									appendOnChildPointer($$, corpo);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									///////////////////////////     ETAPA 6     //////////////////////////////
+									
+									//Obtém um rótulo para identificar o início do código da função
+									funcao->dictPointer->functionLabel = getLabel();
+									
+									//Insere o rótulo no início do código da função
+									iloc_code *funtionCode = NULL;
+									insert(&(funtionCode), "L%d: nop \t\t // inicio de %s", funcao->dictPointer->functionLabel, funcao->dictPointer->key);
 
-									//Adiciona o código gerado da função ao nodo
-									if(corpo != NULL) funcao->code = corpo->code;
+									//Concatena com o código do corpo
+									if(corpo != NULL) concatCode(&(funtionCode), &(corpo->code));
 
-									//Inicializa deslocamento do escopo local
-									deslocamentoEscopoLocal = 0;
+									//Adiciona um comando de retorno para a função chamadora
+									insert(&(funtionCode), "jump -> fp \t\t // fim de %s", funcao->dictPointer->key);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
 
+									funcao->code = funtionCode;
 									$$ = funcao;
 								}
 									
@@ -300,15 +405,46 @@ decl_funcao:	cabecalho '(' parametros ')' var_locais corpo
 									comp_tree_t *funcao = createRoot(IKS_AST_FUNCAO);
 
 									//Associa a entrada da tabela de símbolos e a sub-árvore do corpo no nodo
-									funcao->dictPointer = $1;
-									appendOnChildPointer($$, corpo);
+									funcao->dictPointer = simboloFuncao;
+									appendOnChildPointer(funcao, corpo);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									///////////////////////////     ETAPA 6     //////////////////////////////
 
-									//Adiciona o código gerado da função ao nodo
-									if(corpo != NULL) funcao->code = corpo->code;
+									//Obtém um rótulo para identificar o início do código da função
+									funcao->dictPointer->functionLabel = getLabel();
+									
+									//Insere o rótulo no início do código da função
+									iloc_code *funtionCode = NULL;
+									insert(&(funtionCode), "L%d: nop \t\t // inicio de %s", funcao->dictPointer->functionLabel, funcao->dictPointer->key);
+									
+									//Concatena com o código do corpo
+									if(corpo != NULL) concatCode(&(funtionCode), &(corpo->code));
 
-									//Inicializa deslocamento do escopo local
-									deslocamentoEscopoLocal = 0;
+									//Adiciona um comando de retorno para a função chamadora
+									insert(&(funtionCode), "jump -> fp \t\t // fim de %s", funcao->dictPointer->key);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
 
+									funcao->code = funtionCode;
 									$$ = funcao;
 								};
 
@@ -328,8 +464,44 @@ cabecalho:		decl_var
 
 									//Associa a tabela de símbolos da função na entrada da tabela de símbolos
 									item->functionSymbolTable = tabelaDeSimbolosAtual;
-
+									
 									simboloFuncao = item;
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									///////////////////////////     ETAPA 6     //////////////////////////////
+									
+									//Inicializa o tamanho do registro de ativação com espaço reservado para endereço de retorno, vínculo estático, dinâmico e estado da máquina
+									item->activationRecordSize = AR_RETURN_ADDRESS_SIZE + AR_STATIC_LINK_SIZE + AR_DYNAMIC_LINK_SIZE + AR_MACHINE_STATE_SIZE;
+									
+									//E com espaço utilizado para guardar valor de retorno
+									switch(item->valueType){
+										case IKS_INT: simboloFuncao->activationRecordSize += IKS_INT_SIZE; break;
+										case IKS_FLOAT: simboloFuncao->activationRecordSize += IKS_FLOAT_SIZE; break;
+										case IKS_CHAR: simboloFuncao->activationRecordSize += IKS_CHAR_SIZE; break;
+										case IKS_STRING: simboloFuncao->activationRecordSize += IKS_STRING_SIZE; break;
+										case IKS_BOOL: simboloFuncao->activationRecordSize += IKS_BOOL_SIZE; break;
+									}
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+
 									$$ = $1;
 								};
 
@@ -349,21 +521,44 @@ parametros:	decl_var ',' parametros
 
 									//Associa o tipo do identificador na tabela de símbolos
 									item->nodeType = IKS_VARIABLE_ITEM;
-
-									//Associa o endereço da variável
-									item->address = deslocamentoEscopoLocal;
+									
+									//Insere o tipo do parâmetro na lista de parâmetros na tabela de símbolos
+									insertTail(&(simboloFuncao->parametersList), item);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									///////////////////////////     ETAPA 6     //////////////////////////////
+	
+									//Associa o deslocamento da variável
+									item->address = simboloFuncao->activationRecordSize;
 
 									//Associa o número de bytes da variavel na tabela de símbolos e incrementa o deslocamento local
 									switch(item->valueType){
-										case IKS_INT:			item->numBytes = IKS_INT_SIZE; deslocamentoEscopoLocal += IKS_INT_SIZE; break;
-										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoLocal += IKS_FLOAT_SIZE; break;
-										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoLocal += IKS_CHAR_SIZE; break;
-										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoLocal += IKS_STRING_SIZE; break;
-										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoLocal += IKS_BOOL_SIZE; break;
+										case IKS_INT:			item->numBytes = IKS_INT_SIZE; simboloFuncao->activationRecordSize += IKS_INT_SIZE; break;
+										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; simboloFuncao->activationRecordSize += IKS_FLOAT_SIZE; break;
+										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; simboloFuncao->activationRecordSize += IKS_CHAR_SIZE; break;
+										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; simboloFuncao->activationRecordSize += IKS_STRING_SIZE; break;
+										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; simboloFuncao->activationRecordSize += IKS_BOOL_SIZE; break;
 									}
-
-									//Insere o tipo do parâmetro na lista de parâmetros na tabela de símbolos
-									insertTail(&(simboloFuncao->parametersList), &(item->valueType));
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
 								}
 								| ultimo_parametro;
 
@@ -374,21 +569,45 @@ ultimo_parametro:	decl_var
 
 									//Associa o tipo do identificador na tabela de símbolos
 									item->nodeType = IKS_VARIABLE_ITEM;
-
+									
+									//Insere o tipo do parâmetro na lista de parâmetros na tabela de símbolos
+									insertTail(&(simboloFuncao->parametersList), item);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									///////////////////////////     ETAPA 6     //////////////////////////////
+									
 									//Associa o endereço da variável
-									item->address = deslocamentoEscopoLocal;
+									item->address = simboloFuncao->activationRecordSize;
 
 									//Associa o número de bytes da variavel na tabela de símbolos e incrementa o deslocamento local
 									switch(item->valueType){
-										case IKS_INT:			item->numBytes = IKS_INT_SIZE; deslocamentoEscopoLocal += IKS_INT_SIZE; break;
-										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoLocal += IKS_FLOAT_SIZE; break;
-										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoLocal += IKS_CHAR_SIZE; break;
-										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoLocal += IKS_STRING_SIZE; break;
-										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoLocal += IKS_BOOL_SIZE; break;
+										case IKS_INT:			item->numBytes = IKS_INT_SIZE; simboloFuncao->activationRecordSize += IKS_INT_SIZE; break;
+										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; simboloFuncao->activationRecordSize += IKS_FLOAT_SIZE; break;
+										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; simboloFuncao->activationRecordSize += IKS_CHAR_SIZE; break;
+										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; simboloFuncao->activationRecordSize += IKS_STRING_SIZE; break;
+										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; simboloFuncao->activationRecordSize += IKS_BOOL_SIZE; break;
 									}
-
-									//Insere o tipo do parâmetro na lista de parâmetros na tabela de símbolos
-									insertTail(&(simboloFuncao->parametersList), &(item->valueType));
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									
 								};
 
 /* Na lista de declarações locais, só é possível declarar variáveis simples */									
@@ -400,17 +619,42 @@ var_locais:	decl_var ';' var_locais
 									//Associa o tipo do identificador na tabela de símbolos
 									item->nodeType = IKS_VARIABLE_ITEM;
 
+									insertTail(&(simboloFuncao->localVars), item);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									///////////////////////////     ETAPA 6     //////////////////////////////
+								
 									//Associa o endereço da variável
-									item->address = deslocamentoEscopoLocal;
+									item->address = simboloFuncao->activationRecordSize;
 
 									//Associa o número de bytes da variavel na tabela de símbolos e incrementa o deslocamento local
 									switch(item->valueType){
-										case IKS_INT:			item->numBytes = IKS_INT_SIZE; deslocamentoEscopoLocal += IKS_INT_SIZE; break;
-										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; deslocamentoEscopoLocal += IKS_FLOAT_SIZE; break;
-										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; deslocamentoEscopoLocal += IKS_CHAR_SIZE; break;
-										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; deslocamentoEscopoLocal += IKS_STRING_SIZE; break;
-										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; deslocamentoEscopoLocal += IKS_BOOL_SIZE; break;
+										case IKS_INT:			item->numBytes = IKS_INT_SIZE; simboloFuncao->activationRecordSize += IKS_INT_SIZE; break;
+										case IKS_FLOAT:		item->numBytes = IKS_FLOAT_SIZE; simboloFuncao->activationRecordSize += IKS_FLOAT_SIZE; break;
+										case IKS_CHAR:		item->numBytes = IKS_CHAR_SIZE; simboloFuncao->activationRecordSize += IKS_CHAR_SIZE; break;
+										case IKS_STRING:	item->numBytes = IKS_STRING_SIZE; simboloFuncao->activationRecordSize += IKS_STRING_SIZE; break;
+										case IKS_BOOL:		item->numBytes = IKS_BOOL_SIZE; simboloFuncao->activationRecordSize += IKS_BOOL_SIZE; break;
 									}
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
 								}
 								| /* VAZIO */;
 
@@ -494,12 +738,6 @@ comando:	bloco_de_comando	{ $$ = $1; }
 /* Atribuição, entrada, saída e retorno */
 atribuicao:				var_simples	'=' expressao
 																{
-																	//Verifica se o tipo da expressao e o tipo da variável são compatíveis
-																	//Se não forem, imprime erro e termina
-																	//comp_tree_t *varNode = (comp_tree_t *)$1;
-																	//comp_tree_t *expressionNode = (comp_tree_t *)$3;
-																	//checkCompatibleTypes(varNode->type, expressionNode->type);
-
 																	switch(((comp_tree_t *)$1)->type){
 																		case IKS_INT:
 																			switch(((comp_tree_t *)$3)->type){
@@ -552,7 +790,7 @@ atribuicao:				var_simples	'=' expressao
 																	//Gera código para armazenar o valor que está no registrador de resultado da expressão no endereço da variável
 																	concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
 																	concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
-																	insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_STORE, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$1)->resultRegister, 0);
+																	insert(&(((comp_tree_t *)$$)->code), "store r%d => r%d", ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$1)->resultRegister);
 																}
 						| var_vetor	'=' expressao				{	//Verifica se o tipo da expressao e o tipo da variável são compatíveis
 																	//Se não forem, imprime erro e termina
@@ -608,7 +846,7 @@ atribuicao:				var_simples	'=' expressao
 																	//Gera código para armazenar o valor que está no registrador de resultado da expressão no endereço da variável
 																	concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
 																	concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
-																	insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_STORE, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$1)->resultRegister, 0);
+																	insert(&(((comp_tree_t *)$$)->code), "store r%d => r%d", ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$1)->resultRegister);
 																};
 
 op_entrada:				TK_PR_INPUT expressao	 						{	
@@ -625,7 +863,9 @@ op_entrada:				TK_PR_INPUT expressao	 						{
 																};
 
 
-op_retorno:				TK_PR_RETURN expressao					{	//Verifica se o tipo de retorno da função é compatível com o tipo da expressão
+op_retorno:				TK_PR_RETURN expressao
+																{
+																	//Verifica se o tipo de retorno da função é compatível com o tipo da expressão
 																	//Se não for, imprime erro e termina
 																	switch(simboloFuncao->valueType){
 																		case IKS_INT:
@@ -673,6 +913,39 @@ op_retorno:				TK_PR_RETURN expressao					{	//Verifica se o tipo de retorno da f
 																	$$ = createRoot(IKS_AST_RETURN);
 																	//Associa sub-árvore da expressão no nodo de retorno
 																	appendOnChildPointer($$, $2);
+																	
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	///////////////////////////     ETAPA 6     //////////////////////////////
+
+																	//Concatena o código da expressão
+																	concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$2)->code));
+
+																	//Insere o valor de retorno no campo apropriado do RA
+																	insert(&(((comp_tree_t *)$$)->code), "storeAI r%d => fp, %d \t\t // insere valor de retorno", ((comp_tree_t *)$2)->resultRegister, AR_RETURN_VALUE_OFFSET);
+
+																	//Adiciona um comando de retorno para a função chamadora
+																	insert(&(((comp_tree_t *)$$)->code), "jump -> fp \t\t // retorna ao chamador");
+																	
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+																	//////////////////////////////////////////////////////////////////////////
+
 																};
 
 op_saida:				TK_PR_OUTPUT lista_elementos_saida		{ $$ = createRoot(IKS_AST_OUTPUT); appendOnChildPointer($$, $2);}
@@ -741,7 +1014,7 @@ expressao:						var									{ $$ = $1; }
 												
 												//Gera código para inverter o valor do registrador de resultado da expressão e armazenar no novo registrador de resultado
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$2)->code));
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_RSUBI, ((comp_tree_t *)$2)->resultRegister, 0, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "rsubI r%d, %d => r%d", ((comp_tree_t *)$2)->resultRegister, 0, ((comp_tree_t *)$$)->resultRegister);
 											}
 											
 											| expressao '+' expressao
@@ -777,7 +1050,7 @@ expressao:						var									{ $$ = $1; }
 												//Gera código para somar o valor do registrador de resultado das expressões e armazenar no novo registrador de resultado
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_ADD, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "add r%d, r%d => r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$$)->resultRegister);
 											}
 											
 											| expressao '-' expressao
@@ -813,7 +1086,7 @@ expressao:						var									{ $$ = $1; }
 												//Gera código para subtrair o valor do registrador de resultado das expressões e armazenar no novo registrador de resultado
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_SUB, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "sub r%d, r%d => r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$$)->resultRegister);
 											}
 											
 											| expressao '/' expressao
@@ -849,7 +1122,7 @@ expressao:						var									{ $$ = $1; }
 												//Gera código para dividir o valor do registrador de resultado das expressões e armazenar no novo registrador de resultado
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_DIV, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "div r%d, r%d => r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$$)->resultRegister);
 											}
 											
 											| expressao '*' expressao
@@ -886,7 +1159,7 @@ expressao:						var									{ $$ = $1; }
 												//Gera código para multiplicar o valor do registrador de resultado das expressões e armazenar no novo registrador de resultado
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_MULT, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "mult r%d, r%d => r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, ((comp_tree_t *)$$)->resultRegister);
 											}
 												
 											| '!' expressao
@@ -911,7 +1184,7 @@ expressao:						var									{ $$ = $1; }
 												
 												//Cria registrador auxiliar que contém o valor 1
 												int regValue1 = getRegister();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, 1, regValue1, 0);
+												insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", 1, regValue1);
 												
 												//Cria o label de saída da avaliação
 												int nextLabel = getLabel();
@@ -923,20 +1196,20 @@ expressao:						var									{ $$ = $1; }
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$2)->code));
 												
 												//Avalia a expressão
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$2)->resultRegister, regValue1, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$2)->resultRegister, regValue1, regEvaluation);
 												int labelTrue = getLabel();
 												int labelFalse = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelTrue, labelFalse);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelTrue, labelFalse);
 
 												//Expressão é verdadeira
-												insertOperation(&(((comp_tree_t *)$$)->code), labelTrue, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelTrue, 0, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Expressão é falsa
-												insertOperation(&(((comp_tree_t *)$$)->code), labelFalse, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelFalse, 1, ((comp_tree_t *)$$)->resultRegister);
 												
 												//Fim da avaliação
-												insertOperation(&(((comp_tree_t *)$$)->code), nextLabel, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", nextLabel);
 											}
 
 											| expressao '<' expressao
@@ -978,20 +1251,20 @@ expressao:						var									{ $$ = $1; }
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
 												
 												//Avalia o comando
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPLT, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_LT r%d, r%d -> r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
 												int labelTrue = getLabel();
 												int labelFalse = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelTrue, labelFalse);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelTrue, labelFalse);
 
 												//Resultado é verdadeiro
-												insertOperation(&(((comp_tree_t *)$$)->code), labelTrue, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelTrue, 1, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Resultado é falso
-												insertOperation(&(((comp_tree_t *)$$)->code), labelFalse, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelFalse, 0, ((comp_tree_t *)$$)->resultRegister);
 												
 												//Fim da avaliação
-												insertOperation(&(((comp_tree_t *)$$)->code), nextLabel, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", nextLabel);
 											}
 												
 											| expressao '>' expressao
@@ -1031,22 +1304,22 @@ expressao:						var									{ $$ = $1; }
 												//Concatena códigos das expressões
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-												
+
 												//Avalia o comando
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGT, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GT r%d, r%d -> r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
 												int labelTrue = getLabel();
 												int labelFalse = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelTrue, labelFalse);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelTrue, labelFalse);
 
 												//Resultado é verdadeiro
-												insertOperation(&(((comp_tree_t *)$$)->code), labelTrue, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelTrue, 1, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Resultado é falso
-												insertOperation(&(((comp_tree_t *)$$)->code), labelFalse, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelFalse, 0, ((comp_tree_t *)$$)->resultRegister);
 												
 												//Fim da avaliação
-												insertOperation(&(((comp_tree_t *)$$)->code), nextLabel, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", nextLabel);
 											}
 												
 											| expressao TK_OC_LE expressao
@@ -1086,22 +1359,22 @@ expressao:						var									{ $$ = $1; }
 												//Concatena códigos das expressões
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-												
+
 												//Avalia o comando
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPLE, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_LE r%d, r%d -> r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
 												int labelTrue = getLabel();
 												int labelFalse = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelTrue, labelFalse);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelTrue, labelFalse);
 
 												//Resultado é verdadeiro
-												insertOperation(&(((comp_tree_t *)$$)->code), labelTrue, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelTrue, 1, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Resultado é falso
-												insertOperation(&(((comp_tree_t *)$$)->code), labelFalse, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelFalse, 0, ((comp_tree_t *)$$)->resultRegister);
 												
 												//Fim da avaliação
-												insertOperation(&(((comp_tree_t *)$$)->code), nextLabel, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", nextLabel);
 											}
 												
 											| expressao TK_OC_GE expressao
@@ -1141,22 +1414,22 @@ expressao:						var									{ $$ = $1; }
 												//Concatena códigos das expressões
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-												
+
 												//Avalia o comando
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
 												int labelTrue = getLabel();
 												int labelFalse = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelTrue, labelFalse);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelTrue, labelFalse);
 
 												//Resultado é verdadeiro
-												insertOperation(&(((comp_tree_t *)$$)->code), labelTrue, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelTrue, 1, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Resultado é falso
-												insertOperation(&(((comp_tree_t *)$$)->code), labelFalse, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelFalse, 0, ((comp_tree_t *)$$)->resultRegister);
 												
 												//Fim da avaliação
-												insertOperation(&(((comp_tree_t *)$$)->code), nextLabel, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", nextLabel);
 											}
 												
 											| expressao TK_OC_EQ expressao
@@ -1196,22 +1469,22 @@ expressao:						var									{ $$ = $1; }
 												//Concatena códigos das expressões
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-												
+
 												//Avalia o comando
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPEQ, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_EQ r%d, r%d -> r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
 												int labelTrue = getLabel();
 												int labelFalse = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelTrue, labelFalse);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelTrue, labelFalse);
 
 												//Resultado é verdadeiro
-												insertOperation(&(((comp_tree_t *)$$)->code), labelTrue, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelTrue, 1, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Resultado é falso
-												insertOperation(&(((comp_tree_t *)$$)->code), labelFalse, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelFalse, 0, ((comp_tree_t *)$$)->resultRegister);
 												
 												//Fim da avaliação
-												insertOperation(&(((comp_tree_t *)$$)->code), nextLabel, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", nextLabel);
 											}
 												
 											| expressao TK_OC_NE expressao
@@ -1251,22 +1524,22 @@ expressao:						var									{ $$ = $1; }
 												//Concatena códigos das expressões
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
-												
+
 												//Avalia o comando
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPNE, ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_NE r%d, r%d -> r%d", ((comp_tree_t *)$1)->resultRegister, ((comp_tree_t *)$3)->resultRegister, regEvaluation);
 												int labelTrue = getLabel();
 												int labelFalse = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelTrue, labelFalse);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelTrue, labelFalse);
 
 												//Resultado é verdadeiro
-												insertOperation(&(((comp_tree_t *)$$)->code), labelTrue, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelTrue, 1, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Resultado é falso
-												insertOperation(&(((comp_tree_t *)$$)->code), labelFalse, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelFalse, 0, ((comp_tree_t *)$$)->resultRegister);
 												
 												//Fim da avaliação
-												insertOperation(&(((comp_tree_t *)$$)->code), nextLabel, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", nextLabel);
 											}
 												
 											| expressao TK_OC_OR expressao
@@ -1299,8 +1572,8 @@ expressao:						var									{ $$ = $1; }
 												
 												//Cria registrador auxiliar que contém o valor 1
 												int regValue1 = getRegister();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, 1, regValue1, 0);
-												
+												insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", 1, regValue1);
+
 												//Cria o label de saída da avaliação
 												int nextLabel = getLabel();
 												
@@ -1309,38 +1582,38 @@ expressao:						var									{ $$ = $1; }
 												
 												//Concatena o código da expressão 1
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
-												
+
 												//Avalia expressão 1
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$1)->resultRegister, regValue1, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$1)->resultRegister, regValue1, regEvaluation);
 												int labelExp1True = getLabel();
 												int labelExp1False = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelExp1True, labelExp1False);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelExp1True, labelExp1False);
 												
 												//Expressão 1 é verdadeira (o resultado é verdadeiro)
-												insertOperation(&(((comp_tree_t *)$$)->code), labelExp1True, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelExp1True, 1, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Expressão 1 é falsa (avalia a próxima expressão)
-												insertOperation(&(((comp_tree_t *)$$)->code), labelExp1False, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", labelExp1False);
 												
 												//Concatena o código da expressão 2
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
 												
 												//Avalia expressão 2
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$3)->resultRegister, regValue1, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$3)->resultRegister, regValue1, regEvaluation);
 												int labelExp2True = getLabel();
 												int labelExp2False = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelExp2True, labelExp2False);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelExp2True, labelExp2False);
 												
 												//Expressão 2 é verdadeira (o resultado é verdadeiro)
-												insertOperation(&(((comp_tree_t *)$$)->code), labelExp2True, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelExp2True, 1, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Expressão 2 é falsa (o resultado é falso)
-												insertOperation(&(((comp_tree_t *)$$)->code), labelExp2False, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelExp2False, 0, ((comp_tree_t *)$$)->resultRegister);
 												
 												//Fim da avaliação da expressão 2
-												insertOperation(&(((comp_tree_t *)$$)->code), nextLabel, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", nextLabel);
 											}
 												
 											| expressao TK_OC_AND expressao
@@ -1373,7 +1646,7 @@ expressao:						var									{ $$ = $1; }
 												
 												//Cria registrador auxiliar que contém o valor 1
 												int regValue1 = getRegister();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, 1, regValue1, 0);
+												insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", 1, regValue1);
 												
 												//Cria o label de saída da avaliação
 												int nextLabel = getLabel();
@@ -1383,38 +1656,38 @@ expressao:						var									{ $$ = $1; }
 												
 												//Concatena o código da expressão 1
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$1)->code));
-												
+
 												//Avalia expressão 1
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$1)->resultRegister, regValue1, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$1)->resultRegister, regValue1, regEvaluation);
 												int labelExp1True = getLabel();
 												int labelExp1False = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelExp1True, labelExp1False);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelExp1True, labelExp1False);
 												
 												//Expressão 1 é falsa (o resultado é falso)
-												insertOperation(&(((comp_tree_t *)$$)->code), labelExp1False, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelExp1False, 0, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Expressão 1 é verdadeira (avalia a próxima expressão)
-												insertOperation(&(((comp_tree_t *)$$)->code), labelExp1True, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", labelExp1True);
 												
 												//Concatena o código da expressão 2
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
 												
 												//Avalia expressão 2
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$3)->resultRegister, regValue1, regEvaluation);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$3)->resultRegister, regValue1, regEvaluation);
 												int labelExp2True = getLabel();
 												int labelExp2False = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, regEvaluation, labelExp2True, labelExp2False);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", regEvaluation, labelExp2True, labelExp2False);
 												
 												//Expressão 2 é verdadeira (o resultado é verdadeiro)
-												insertOperation(&(((comp_tree_t *)$$)->code), labelExp2True, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, nextLabel, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelExp2True, 1, ((comp_tree_t *)$$)->resultRegister);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", nextLabel);
 												
 												//Expressão 2 é falsa (o resultado é falso)
-												insertOperation(&(((comp_tree_t *)$$)->code), labelExp2False, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: loadI %d => r%d", labelExp2False, 0, ((comp_tree_t *)$$)->resultRegister);
 												
 												//Fim da avaliação da expressão 2
-												insertOperation(&(((comp_tree_t *)$$)->code), nextLabel, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", nextLabel);
 											};
 
 		
@@ -1426,7 +1699,228 @@ expressao:						var									{ $$ = $1; }
 		
 
 /* Chamada de uma função */
-chamada_funcao:		nome_fun '(' lista_de_argumentos ')'	{
+chamada_funcao:		nome_fun '(' lista_de_argumentos ')'
+								{
+									comp_dict_item_t *item = (comp_dict_item_t *)$1;
+									
+									//Obtém o vetor que acaba de ser lido da pilha de vetores
+									FunctionCallInfo *functionBeingCalled = (FunctionCallInfo *)getTop(functionStack);
+									pop(&functionStack);
+									
+									//Verifica se o número de argumentos lido é maior ou menor que o número de argumentos declarado
+									if(functionBeingCalled->argumentsCounter != countListNodes(functionBeingCalled->functionSymbol->parametersList)){
+										printf("A chamada da funcao '%s' na linha %d possui %d argumentos, porem, deveria ter %d argumentos.\n", functionBeingCalled->functionSymbol->key, obtemLinhaAtual(), functionBeingCalled->argumentsCounter, countListNodes(functionBeingCalled->functionSymbol->parametersList));
+										exit(IKS_ERROR_WRONG_NUM_ARGS);
+									}
+									
+									//Verifica se o tipo e a ordem dos parâmetros está correta
+									comp_list_t *ptArgumentosCorretos = functionBeingCalled->functionSymbol->parametersList;
+									comp_list_t *ptArgumentosUtilizados = functionBeingCalled->argumentsTrees;
+									while(ptArgumentosCorretos != NULL){
+										comp_tree_t *expressionTree = (comp_tree_t *)ptArgumentosUtilizados->data;
+										switch(((comp_dict_item_t *)ptArgumentosCorretos->data)->valueType){
+											case IKS_INT:
+												switch(expressionTree->type){
+													case IKS_INT: break;
+													case IKS_FLOAT: expressionTree->tipoCoercao = IKS_COERCAO_FLOAT_INT; expressionTree->type = IKS_INT; break; //Coercao float -> int
+													case IKS_BOOL: expressionTree->tipoCoercao = IKS_COERCAO_BOOL_INT; expressionTree->type = IKS_INT; break; //Coercao bool -> int
+													case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo int.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo int.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												} break;
+											case IKS_FLOAT:
+												switch(expressionTree->type){
+													case IKS_INT: expressionTree->tipoCoercao = IKS_COERCAO_INT_FLOAT; expressionTree->type = IKS_FLOAT; break; //Coercao int -> float
+													case IKS_FLOAT: break;
+													case IKS_BOOL: expressionTree->tipoCoercao = IKS_COERCAO_BOOL_FLOAT; expressionTree->type = IKS_FLOAT; break; //Coercao bool -> float
+													case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo float.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo float.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												} break;
+											case IKS_BOOL:
+												switch(expressionTree->type){
+													case IKS_INT: expressionTree->tipoCoercao = IKS_COERCAO_INT_BOOL; expressionTree->type = IKS_BOOL; break; //Coercao int -> bool
+													case IKS_FLOAT: expressionTree->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; expressionTree->type = IKS_BOOL; break; //Coercao float -> bool
+													case IKS_BOOL: break;
+													case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo bool.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo bool.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												} break;
+											case IKS_CHAR:
+												switch(expressionTree->type){
+													case IKS_INT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo char.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_FLOAT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo char.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_BOOL: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo char.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_CHAR: break;
+													case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo char.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+												} break;
+											case IKS_STRING:
+												switch(expressionTree->type){
+													case IKS_INT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo string.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_FLOAT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo string.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_BOOL: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo string.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo string.\n", item->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
+													case IKS_STRING: break;
+												} break;
+										}
+										ptArgumentosUtilizados = ptArgumentosUtilizados->next;
+										ptArgumentosCorretos = ptArgumentosCorretos->next;
+									}
+									
+									//Cria um nó de chamada de função na AST
+									$$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO);
+									//Associa o tipo do nó de chamada de função (tipo de retorno da função)
+									((comp_tree_t *)$$)->type = item->valueType;
+									//Cria um nó de identificador como filho do nó de chamada de função
+									appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
+									//Associa um ponteiro para uma entrada na tabela de símbolos no nó de identificador
+									((comp_tree_t *)$$)->child->dictPointer = item;
+									//Associa a sub-árvore que contém os argumentos no nó de chamada de função
+									appendOnChildPointer($$, $3);
+									
+									//Concatena o código gerado pelo cálculo das expressões dos argumentos
+									concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									///////////////////////////     ETAPA 6     //////////////////////////////
+									
+									//Cria registro de ativação na pilha (decrementa o fp)
+									insert(&(((comp_tree_t *)$$)->code), "subI fp, %d => fp \t\t // cria RA", simboloFuncao->activationRecordSize);
+									
+									//Insere o vínculo estático no RA
+									int tmpRegister = getRegister();
+									insert(&(((comp_tree_t *)$$)->code), "loadI 0 => r%d", tmpRegister);
+									insert(&(((comp_tree_t *)$$)->code), "storeAI r%d => fp, %d \t\t // insere vinculo estatico", tmpRegister, -(AR_RETURN_ADDRESS_SIZE));
+									
+									//Insere o vínculo dinamico no RA
+									insert(&(((comp_tree_t *)$$)->code), "addI fp, %d => r%d", simboloFuncao->activationRecordSize, tmpRegister);
+									insert(&(((comp_tree_t *)$$)->code), "storeAI r%d => fp, %d \t\t //insere vinculo dinamico", tmpRegister, -(AR_RETURN_ADDRESS_SIZE + AR_STATIC_LINK_SIZE));
+									
+									//Insere o estado da máquina no RA
+									//Nada
+									
+									//Insere os argumentos no RA				
+									//Para cada registrador de resultado dos argumentos, insere seu valor na posição correta do registro de ativação
+									comp_list_t *ptArgumentTrees = functionBeingCalled->argumentsTrees;
+									comp_list_t *ptArgumentList = item->parametersList;
+									int resultRegister;
+									while(ptArgumentTrees != NULL){
+										//Obtém o registrador de resultado da expressão correspondente a algum argumenti
+										resultRegister = ((comp_tree_t *)(ptArgumentTrees->data))->resultRegister;
+
+										//Salva este valor na posição correta no registro de ativação
+										insert(&(((comp_tree_t *)$$)->code), "storeAI r%d => fp, %d", resultRegister, -(((comp_dict_item_t *)ptArgumentList->data)->address));
+										
+										ptArgumentTrees = ptArgumentTrees->next;
+										ptArgumentList = ptArgumentList->next;
+									}
+									
+									//Insere o endereço de retorno e passa o controle para a funcao chamada
+									insert(&(((comp_tree_t *)$$)->code), "addI pc, 24 => r%d", tmpRegister);
+									insert(&(((comp_tree_t *)$$)->code), "store r%d => fp \t\t // insere end de retorno", tmpRegister);
+									insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d \t\t // passando controle para %s", item->functionLabel, item->key);
+									
+									//Armazena valor retornado pela função no registrador de resultado
+									((comp_tree_t *)$$)->resultRegister = getRegister();
+									insert(&(((comp_tree_t *)$$)->code), "loadAI fp, %d => r%d \t\t obtendo valor de retorno", AR_RETURN_VALUE_OFFSET, ((comp_tree_t *)$$)->resultRegister);
+									
+									//Remove registro de ativação da pilha (incrementa o fp)
+									insert(&(((comp_tree_t *)$$)->code), "addI fp, %d => fp \t\t // destroi RA", simboloFuncao->activationRecordSize);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									
+								}
+			| nome_fun '(' /* VAZIO */ ')'
+								{
+									comp_dict_item_t *item = (comp_dict_item_t *)$1;
+									
+									//Obtém o vetor que acaba de ser lido da pilha de vetores
+									FunctionCallInfo *functionBeingCalled = (FunctionCallInfo *)getTop(functionStack);
+									pop(&functionStack);
+									
+									//Verifica se o número de argumentos lido é maior ou menor que o número de argumentos declarado
+									if(functionBeingCalled->argumentsCounter != countListNodes(functionBeingCalled->functionSymbol->parametersList)){
+										printf("A chamada da funcao '%s' na linha %d possui %d argumentos, porem, deveria ter %d argumentos.\n", functionBeingCalled->functionSymbol->key, obtemLinhaAtual(), functionBeingCalled->argumentsCounter, countListNodes(functionBeingCalled->functionSymbol->parametersList));
+										exit(IKS_ERROR_WRONG_NUM_ARGS);
+									}
+
+									//Cria um nó de chamada de função na AST
+									$$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO);
+									//Associa o tipo do nó de chamada de função (tipo de retorno da função)
+									((comp_tree_t *)$$)->type = item->valueType;
+									//Cria um nó de identificador como filho do nó de chamada de função
+									appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
+									//Associa um ponteiro para uma entrada na tabela de símbolos no nó de identificador
+									((comp_tree_t *)$$)->child->dictPointer = item;
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									///////////////////////////     ETAPA 6     //////////////////////////////
+									
+									//Cria registro de ativação na pilha (decrementa o fp)
+									insert(&(((comp_tree_t *)$$)->code), "subI fp, %d => fp \t\t // cria RA", simboloFuncao->activationRecordSize);
+									
+									//Insere o vínculo estático no RA
+									int tmpRegister = getRegister();
+									insert(&(((comp_tree_t *)$$)->code), "loadI 0 => r%d", tmpRegister);
+									insert(&(((comp_tree_t *)$$)->code), "storeAI r%d => fp, %d \t\t // insere vinculo estatico", tmpRegister, -(AR_RETURN_ADDRESS_SIZE));
+									
+									//Insere o vínculo dinamico no RA
+									insert(&(((comp_tree_t *)$$)->code), "addI fp, %d => r%d", simboloFuncao->activationRecordSize, tmpRegister);
+									insert(&(((comp_tree_t *)$$)->code), "storeAI r%d => fp, %d \t\t //insere vinculo dinamico", tmpRegister, -(AR_RETURN_ADDRESS_SIZE + AR_STATIC_LINK_SIZE));
+									
+									//Insere o estado da máquina no RA
+									//Nada
+									
+									//Insere o endereço de retorno e passa o controle para a funcao chamada
+									insert(&(((comp_tree_t *)$$)->code), "addI pc, 24 => r%d", tmpRegister);
+									insert(&(((comp_tree_t *)$$)->code), "store r%d => fp \t\t // insere end de retorno", tmpRegister);
+									insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d \t\t // passando controle para %s", item->functionLabel, item->key);
+									
+									//Armazena valor retornado pela função no registrador de resultado
+									((comp_tree_t *)$$)->resultRegister = getRegister();
+									insert(&(((comp_tree_t *)$$)->code), "loadAI fp, %d => r%d \t\t obtendo valor de retorno", AR_RETURN_VALUE_OFFSET, ((comp_tree_t *)$$)->resultRegister);
+									
+									//Remove registro de ativação da pilha (incrementa o fp)
+									insert(&(((comp_tree_t *)$$)->code), "addI fp, %d => fp \t\t // destroi RA", simboloFuncao->activationRecordSize);
+									
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									//////////////////////////////////////////////////////////////////////////
+									
+								};
+																		
+nome_fun:		TK_IDENTIFICADOR 			{
 									//Verifica se o identificador já foi declarado (no escopo global)
 									comp_dict_item_t *item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
 									//Se não foi, imprime o erro e termina
@@ -1442,167 +1936,45 @@ chamada_funcao:		nome_fun '(' lista_de_argumentos ')'	{
 										case IKS_FUNCTION_ITEM: break;
 									}
 									free($1);
-									//Verifica se ainda faltam argumentos
-									//Se ainda faltam, imprime erro e termina
-									if(listaDeParametrosSendoLida != NULL){
-										printf("A chamada da funcao '%s' na linha %d possui menos argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
-										exit(IKS_ERROR_MISSING_ARGS);
-									}
-									//Cria um nó de chamada de função na AST
-									$$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO);
-									//Associa o tipo do nó de chamada de função (tipo de retorno da função)
-									((comp_tree_t *)$$)->type = item->valueType;
-									//Cria um nó de identificador como filho do nó de chamada de função
-									appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
-									//Associa um ponteiro para uma entrada na tabela de símbolos no nó de identificador
-									((comp_tree_t *)$$)->child->dictPointer = item;
-									//Associa a sub-árvore que contém os argumentos no nó de chamada de função
-									appendOnChildPointer($$, $3);
-								}
-			| nome_fun '(' /* VAZIO */ ')'		{	//Verifica se o identificador já foi declarado (no escopo global)
-									comp_dict_item_t *item = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
-									//Se não foi, imprime o erro e termina
-									if(item == NULL){
-										printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
-										exit(IKS_ERROR_UNDECLARED);
-									}
-									//Se foi, verifica se ele foi declarado como uma função
-									//Se não foi, imprime o erro e termina
-									switch(item->nodeType){
-										case IKS_VARIABLE_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como uma variavel simples e nao como uma funcao.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VARIABLE); break;
-										case IKS_VECTOR_ITEM: printf("O identificador '%s' utilizado na linha %d foi declarado como um vetor e nao como uma funcao.\n", $1, obtemLinhaAtual()); exit(IKS_ERROR_VECTOR); break;
-										case IKS_FUNCTION_ITEM: break;
-									}
-									//Se foi, verifica se a função não precisa de parâmetros
-									//Se precisa, imprime erro e termina
-									if(countListNodes(item->parametersList) > 0){
-										printf("Faltam argumentos na chamada da funcao '%s' na linha %d.\n", $1, obtemLinhaAtual());
-										exit(IKS_ERROR_MISSING_ARGS);
-									}
-									//Se não precisa, a chamada é válida
-									free($1);
-									//Cria um nó de chamada de função na AST
-									$$ = createRoot(IKS_AST_CHAMADA_DE_FUNCAO);
-									//Associa o tipo do nó de chamada de função (tipo de retorno da função)
-									((comp_tree_t *)$$)->type = item->valueType;
-									//Cria um nó de identificador como filho do nó de chamada de função
-									appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
-									//Associa um ponteiro para uma entrada na tabela de símbolos no nó de identificador
-									((comp_tree_t *)$$)->child->dictPointer = item;
-								};
-																		
-nome_fun:		TK_IDENTIFICADOR 			{
-									simboloDaFuncaoSendoChamada = searchKey(*tabelaDeSimbolosEscopoGlobal, $1);
-									if(simboloDaFuncaoSendoChamada == NULL){
-										printf("O identificador '%s' utilizado na linha %d nao foi declarado.\n", $1, obtemLinhaAtual());
-										exit(IKS_ERROR_UNDECLARED);
-									}
-									listaDeParametrosSendoLida = simboloDaFuncaoSendoChamada->parametersList;
-									$$ = $1;
+
+									FunctionCallInfo *functionBeingCalled = malloc(sizeof(FunctionCallInfo));
+									push(&functionStack, functionBeingCalled);
+									functionBeingCalled->functionSymbol = item;
+									functionBeingCalled->argumentsCounter = 0;
+									functionBeingCalled->argumentsTrees = NULL;		
+									
+									$$ = item;
 								}
 
-lista_de_argumentos:	expressao ',' lista_de_argumentos	{	//Verifica se o tipo de expressão é compatível com o parâmetro da posição correspondente
-									if(listaDeParametrosSendoLida == NULL){
-										printf("A chamada da funcao '%s' na linha %d possui mais argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
-										exit(IKS_ERROR_EXCESS_ARGS);
-									}
-									int tipoDoArgumento = *((int *)listaDeParametrosSendoLida->data);
-									switch(tipoDoArgumento){
-										case IKS_INT:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: break;
-												case IKS_FLOAT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$1)->type = IKS_INT; break; //Coercao float -> int
-												case IKS_BOOL: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$1)->type = IKS_INT; break; //Coercao bool -> int
-												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-											} break;
-										case IKS_FLOAT:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_INT_FLOAT; ((comp_tree_t *)$1)->type = IKS_FLOAT; break; //Coercao int -> float
-												case IKS_FLOAT: break;
-												case IKS_BOOL: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_BOOL_FLOAT; ((comp_tree_t *)$1)->type = IKS_FLOAT; break; //Coercao bool -> float
-												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-											} break;
-										case IKS_BOOL:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$1)->type = IKS_BOOL; break; //Coercao int -> bool
-												case IKS_FLOAT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$1)->type = IKS_BOOL; break; //Coercao float -> bool
-												case IKS_BOOL: break;
-												case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-											} break;
-										case IKS_CHAR:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_FLOAT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_BOOL: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_CHAR: break;
-												case IKS_STRING: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-											} break;
-										case IKS_STRING:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_FLOAT: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_BOOL: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_CHAR: printf("Um argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_STRING: break;
-											} break;
-									}
-									listaDeParametrosSendoLida = listaDeParametrosSendoLida->next;
+lista_de_argumentos:	expressao ',' lista_de_argumentos
+								{
+									//Concatena o código gerado pelas expressões subsequêntes
+									concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
+
+									//Obtém o vetor que está sendo lido da pilha de vetores
+									FunctionCallInfo *functionBeingRead = (FunctionCallInfo *)getTop(functionStack);
+									
+									//Insere a árvore da expressão do argumento na lista de árvores dos argumentos
+									insertTail(&(functionBeingRead->argumentsTrees), $1);
+
+									//Incrementa o contador de argumentos
+									functionBeingRead->argumentsCounter += 1;
+									
 									$$ = $1;
 									appendOnChildPointer($$, $3);
 								}
 
-			| expressao				{	//Verifica se o tipo da expressão é compatível com o último parâmetro da função
-									if(listaDeParametrosSendoLida == NULL){
-										printf("A chamada da funcao '%s' na linha %d possui mais argumentos que o necessario.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual());
-										exit(IKS_ERROR_EXCESS_ARGS);
-									}
-									int tipoDoArgumento = *((int *)listaDeParametrosSendoLida->data);
-									switch(tipoDoArgumento){
-										case IKS_INT:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: break;
-												case IKS_FLOAT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_FLOAT_INT; ((comp_tree_t *)$1)->type = IKS_INT; break; //Coercao float -> int
-												case IKS_BOOL: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_BOOL_INT; ((comp_tree_t *)$1)->type = IKS_INT; break; //Coercao bool -> int
-												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo int.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-											} break;
-										case IKS_FLOAT:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_INT_FLOAT; ((comp_tree_t *)$1)->type = IKS_FLOAT; break; //Coercao int -> float
-												case IKS_FLOAT: break;
-												case IKS_BOOL: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_BOOL_FLOAT; ((comp_tree_t *)$1)->type = IKS_FLOAT; break; //Coercao bool -> float
-												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo float.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-											} break;
-										case IKS_BOOL:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_INT_BOOL; ((comp_tree_t *)$1)->type = IKS_BOOL; break; //Coercao int -> bool
-												case IKS_FLOAT: ((comp_tree_t *)$1)->tipoCoercao = IKS_COERCAO_FLOAT_BOOL; ((comp_tree_t *)$1)->type = IKS_BOOL; break; //Coercao float -> bool
-												case IKS_BOOL: break;
-												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo bool.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-											} break;
-										case IKS_CHAR:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_FLOAT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_BOOL: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_CHAR: break;
-												case IKS_STRING: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo string, porem, devia ser do tipo char.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-											} break;
-										case IKS_STRING:
-											switch(((comp_tree_t *)$1)->type){
-												case IKS_INT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo int, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_FLOAT: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo float, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_BOOL: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo bool, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_CHAR: printf("O ultimo argumento da chamada da funcao '%s' na linha %d eh do tipo char, porem, devia ser do tipo string.\n", simboloDaFuncaoSendoChamada->key, obtemLinhaAtual()); exit(IKS_ERROR_WRONG_TYPE_ARGS); break;
-												case IKS_STRING: break;
-											} break;
-									}
-									listaDeParametrosSendoLida = listaDeParametrosSendoLida->next;
+			| expressao
+								{
+									//Obtém o vetor que está sendo lido da pilha de vetores
+									FunctionCallInfo *functionBeingRead = (FunctionCallInfo *)getTop(functionStack);
+									
+									//Insere a árvore da expressão do argumento na lista de árvores dos argumentos
+									insertTail(&(functionBeingRead->argumentsTrees), $1);
+
+									//Incrementa o contador de argumentos
+									functionBeingRead->argumentsCounter += 1;
+									
 									$$ = $1;
 								};
 
@@ -1676,18 +2048,19 @@ if_then:				TK_PR_IF '(' expressao ')' TK_PR_THEN flow_control_command	%prec "th
 									//Verifica se o resultado é true ou false
 									int tmpRegister = getRegister();
 									int tmpRegister2 = getRegister();
-									insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, 1, tmpRegister2, 0);
-									insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$3)->resultRegister, tmpRegister2, tmpRegister);
+
+									insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", 1, tmpRegister2);
+									insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$3)->resultRegister, tmpRegister2, tmpRegister);
 									
 									int tmpLabel1 = getLabel();
 									int tmpLabel2 = getLabel();
-									insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, tmpRegister, tmpLabel1, tmpLabel2);
+									insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", tmpRegister, tmpLabel1, tmpLabel2);
 									
-									insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel1, ILOC_NOP, 0, 0, 0);
+									insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel1);
 									//Concatena código do comando
 									if($6 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$6)->code));
 									
-									insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel2, ILOC_NOP, 0, 0, 0);
+									insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel2);
 								};
 																					
 if_then_else:	TK_PR_IF '(' expressao ')' TK_PR_THEN	flow_control_command TK_PR_ELSE flow_control_command	{	//Verifica se a expressão é compatível com o tipo bool
@@ -1713,25 +2086,25 @@ if_then_else:	TK_PR_IF '(' expressao ')' TK_PR_THEN	flow_control_command TK_PR_E
 												//Verifica se o resultado é true ou false
 												int tmpRegister = getRegister();
 												int tmpRegister2 = getRegister();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, 1, tmpRegister2, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$3)->resultRegister, tmpRegister2, tmpRegister);
+												insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", 1, tmpRegister2);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$3)->resultRegister, tmpRegister2, tmpRegister);
 												
 												int tmpLabel1 = getLabel();
 												int tmpLabel2 = getLabel();
 												int tmpLabel3 = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, tmpRegister, tmpLabel1, tmpLabel2);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", tmpRegister, tmpLabel1, tmpLabel2);
 												
-												insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel1, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel1);
 												//Concatena código do comando 1
 												if($6 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$6)->code));
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, tmpLabel3, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", tmpLabel3);
 												
-												insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel2, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel2);
 												//Concatena código do comando 2
 												if($8 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$8)->code));
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, tmpLabel3, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", tmpLabel3);
 												
-												insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel3, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel3);
 											};
 																					
 while_do:	TK_PR_WHILE '(' expressao ')'	TK_PR_DO flow_control_command			{	//Verifica se a expressão é compatível com o tipo bool
@@ -1753,22 +2126,22 @@ while_do:	TK_PR_WHILE '(' expressao ')'	TK_PR_DO flow_control_command			{	//Veri
 												int tmpLabel1 = getLabel();
 												int tmpLabel2 = getLabel();
 												int tmpLabel3 = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel1, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel1);
 												concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$3)->code));
 												
 												//Verifica se o resultado é true ou false
 												int tmpRegister = getRegister();
 												int tmpRegister2 = getRegister();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, 1, tmpRegister2, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$3)->resultRegister, tmpRegister2, tmpRegister);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, tmpRegister, tmpLabel2, tmpLabel3);
+												insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", 1, tmpRegister2);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$3)->resultRegister, tmpRegister2, tmpRegister);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", tmpRegister, tmpLabel2, tmpLabel3);
 												
-												insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel2, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel2);
 												//Concatena código do comando
 												if($6 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$6)->code));
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, tmpLabel1, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", tmpLabel1);
 												
-												insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel3, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel3);
 											};
 																					
 do_while:	TK_PR_DO flow_control_command TK_PR_WHILE '(' expressao ')'			{	//Verifica se a expressão é compatível com o tipo bool
@@ -1790,7 +2163,7 @@ do_while:	TK_PR_DO flow_control_command TK_PR_WHILE '(' expressao ')'			{	//Veri
 												int tmpLabel1 = getLabel();
 												int tmpLabel2 = getLabel();
 												int tmpLabel3 = getLabel();
-												insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel1, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel1);
 												if($2 != NULL) concatCode(&(((comp_tree_t *)$$)->code), &(((comp_tree_t *)$2)->code));
 												
 												//Concatena o código da expressão
@@ -1799,14 +2172,15 @@ do_while:	TK_PR_DO flow_control_command TK_PR_WHILE '(' expressao ')'			{	//Veri
 												//Verifica se o resultado é true ou false
 												int tmpRegister = getRegister();
 												int tmpRegister2 = getRegister();
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, 1, tmpRegister2, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CMPGE, ((comp_tree_t *)$5)->resultRegister, tmpRegister2, tmpRegister);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_CBR, tmpRegister, tmpLabel2, tmpLabel3);
+
+												insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", 1, tmpRegister2);
+												insert(&(((comp_tree_t *)$$)->code), "cmp_GE r%d, r%d -> r%d", ((comp_tree_t *)$5)->resultRegister, tmpRegister2, tmpRegister);
+												insert(&(((comp_tree_t *)$$)->code), "cbr r%d -> L%d, L%d", tmpRegister, tmpLabel2, tmpLabel3);
 												
-												insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel2, ILOC_NOP, 0, 0, 0);
-												insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_JUMPI, tmpLabel1, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel2);
+												insert(&(((comp_tree_t *)$$)->code), "jumpI -> L%d", tmpLabel1);
 												
-												insertOperation(&(((comp_tree_t *)$$)->code), tmpLabel3, ILOC_NOP, 0, 0, 0);
+												insert(&(((comp_tree_t *)$$)->code), "L%d: nop", tmpLabel3);
 											};
 
 		
@@ -1842,7 +2216,7 @@ literal:	TK_LIT_FALSE
 						((comp_tree_t *)$$)->resultRegister = getRegister();
 								
 						//Gera código para armazenar o valor do literal no registrador de resultado
-						insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, 0, ((comp_tree_t *)$$)->resultRegister, 0);
+						insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", 0, ((comp_tree_t *)$$)->resultRegister);
 					}
 
 					| TK_LIT_TRUE
@@ -1860,7 +2234,7 @@ literal:	TK_LIT_FALSE
 						((comp_tree_t *)$$)->resultRegister = getRegister();
 								
 						//Gera código para armazenar o valor do literal no registrador de resultado
-						insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, 1, ((comp_tree_t *)$$)->resultRegister, 0);
+						insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", 1, ((comp_tree_t *)$$)->resultRegister);
 					}
 
 					| TK_LIT_INT
@@ -1878,7 +2252,7 @@ literal:	TK_LIT_FALSE
 						((comp_tree_t *)$$)->resultRegister = getRegister();
 								
 						//Gera código para armazenar o valor do literal no registrador de resultado
-						insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, ((comp_tree_t *)$$)->dictPointer->intValue, ((comp_tree_t *)$$)->resultRegister, 0);
+						insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", ((comp_tree_t *)$$)->dictPointer->intValue, ((comp_tree_t *)$$)->resultRegister);
 					}
 
 					| TK_LIT_FLOAT	
@@ -1896,7 +2270,7 @@ literal:	TK_LIT_FALSE
 						((comp_tree_t *)$$)->resultRegister = getRegister();
 								
 						//Gera código para armazenar o valor do literal no registrador de resultado
-						insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, (int)(((comp_tree_t *)$$)->dictPointer->floatValue), ((comp_tree_t *)$$)->resultRegister, 0);
+						insert(&(((comp_tree_t *)$$)->code), "loadI %d => r%d", (int)(((comp_tree_t *)$$)->dictPointer->floatValue), ((comp_tree_t *)$$)->resultRegister);
 					}
 
 					| TK_LIT_CHAR	
@@ -1936,7 +2310,7 @@ var:	var_simples
 								$$ = $1;
 								//Carrega o conteúda da variável em um registrador
 								int resultRegister = getRegister();
-								insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOAD, ((comp_tree_t *)$$)->resultRegister, resultRegister, 0);
+								insert(&(((comp_tree_t *)$$)->code), "load r%d => r%d", ((comp_tree_t *)$$)->resultRegister, resultRegister);
 								((comp_tree_t *)$$)->resultRegister = resultRegister;
 							}
 
@@ -1945,7 +2319,7 @@ var:	var_simples
 								$$ = $1;
 								//Carrega o conteúda da variável em um registrador
 								int resultRegister = getRegister();
-								insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOAD, ((comp_tree_t *)$$)->resultRegister, resultRegister, 0);
+								insert(&(((comp_tree_t *)$$)->code), "load r%d => r%d", ((comp_tree_t *)$$)->resultRegister, resultRegister);
 								((comp_tree_t *)$$)->resultRegister = resultRegister;
 							};
 
@@ -1988,9 +2362,8 @@ var_simples:	TK_IDENTIFICADOR
 								((comp_tree_t *)$$)->resultRegister = getRegister();
 								
 								//Gera código para ler variável da memória e armazenar o seu valor no registrador de resultado
-								insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_LOADI, item->address, ((comp_tree_t *)$$)->resultRegister, 0);
-								if(varGlobal == 1) insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_ADDI, ((comp_tree_t *)$$)->resultRegister, ILOC_BSS, ((comp_tree_t *)$$)->resultRegister);
-								else insertOperation(&(((comp_tree_t *)$$)->code), ILOC_NO_LABEL, ILOC_ADDI, ((comp_tree_t *)$$)->resultRegister, ILOC_RARP, ((comp_tree_t *)$$)->resultRegister);
+								if(varGlobal == 1) insert(&(((comp_tree_t *)$$)->code), "addI bss, %d => r%d", item->address, ((comp_tree_t *)$$)->resultRegister);
+								else insert(&(((comp_tree_t *)$$)->code), "subI fp, %d => r%d", item->address, ((comp_tree_t *)$$)->resultRegister);
 							};
 													
 var_vetor:		TK_IDENTIFICADOR
@@ -2056,14 +2429,15 @@ var_vetor:		TK_IDENTIFICADOR
 								comp_list_t *ptAccess = vectorRead->resultsRegisters;
 								int tmpRegister1, tmpRegister2;
 								int counter = 1;
+
 								while(counter <= vectorRead->dimensionCounter){
 									if(counter == 1){
 										tmpRegister1 = getRegister();
-										insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_I2I, *((int *)ptAccess->data), tmpRegister1, 0);
+										insert(&(vectorRead->vectorNode->code), "i2i r%d => r%d", *((int *)ptAccess->data), tmpRegister1);
 									}else{
 										tmpRegister2 = getRegister();
-										insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_MULTI, tmpRegister1, *((int *)ptDimension->data), tmpRegister2);
-										insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_ADD, tmpRegister2, *((int *)ptAccess->data), tmpRegister1);
+										insert(&(vectorRead->vectorNode->code), "multI r%d, %d => r%d", tmpRegister1, *((int *)ptDimension->data), tmpRegister2);
+										insert(&(vectorRead->vectorNode->code), "add r%d, r%d => r%d", tmpRegister2, *((int *)ptAccess->data), tmpRegister1);
 									}
 									ptAccess = ptAccess->next;
 									ptDimension = ptDimension->next;
@@ -2073,16 +2447,16 @@ var_vetor:		TK_IDENTIFICADOR
 								//multiplica pelo tamanho do tipo
 								tmpRegister2 = getRegister();
 								switch(vectorRead->vectorSymbol->valueType){
-									case IKS_INT: insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_MULTI, tmpRegister1, IKS_INT_SIZE, tmpRegister2); break;
-									case IKS_FLOAT: insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_MULTI, tmpRegister1, IKS_FLOAT_SIZE, tmpRegister2); break;
-									case IKS_CHAR: insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_MULTI, tmpRegister1, IKS_CHAR_SIZE, tmpRegister2); break;
-									case IKS_STRING: insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_MULTI, tmpRegister1, IKS_STRING_SIZE, tmpRegister2); break;
-									case IKS_BOOL: insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_MULTI, tmpRegister1, IKS_BOOL_SIZE, tmpRegister2); break;
+									case IKS_INT: insert(&(vectorRead->vectorNode->code), "multI r%d, %d => r%d", tmpRegister1, IKS_INT_SIZE, tmpRegister2); break;
+									case IKS_FLOAT: insert(&(vectorRead->vectorNode->code), "multI r%d, %d => r%d", tmpRegister1, IKS_FLOAT_SIZE, tmpRegister2); break;
+									case IKS_CHAR: insert(&(vectorRead->vectorNode->code), "multI r%d, %d => r%d", tmpRegister1, IKS_CHAR_SIZE, tmpRegister2); break;
+									case IKS_STRING: insert(&(vectorRead->vectorNode->code), "multI r%d, %d => r%d", tmpRegister1, IKS_STRING_SIZE, tmpRegister2); break;
+									case IKS_BOOL: insert(&(vectorRead->vectorNode->code), "multI r%d, %d => r%d", tmpRegister1, IKS_BOOL_SIZE, tmpRegister2); break;
 								}
 	
 								//soma valor com o endereço base
-								insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_ADDI, tmpRegister2, vectorRead->vectorSymbol->address, vectorRead->vectorNode->resultRegister);
-								insertOperation(&(vectorRead->vectorNode->code), ILOC_NO_LABEL, ILOC_ADDI, vectorRead->vectorNode->resultRegister, ILOC_BSS, vectorRead->vectorNode->resultRegister);
+								insert(&(vectorRead->vectorNode->code), "addI r%d, %d => r%d", tmpRegister2, vectorRead->vectorSymbol->address, vectorRead->vectorNode->resultRegister);
+								insert(&(vectorRead->vectorNode->code), "add r%d, bss => r%d", vectorRead->vectorNode->resultRegister, vectorRead->vectorNode->resultRegister);
 								
 								$$ = vectorRead->vectorNode;
 								clearList(&(vectorRead->resultsRegisters));
@@ -2165,7 +2539,7 @@ tipo:	TK_PR_INT				{ $$ = IKS_INT; }
 comp_tree_t *createRoot(int value){
 	comp_tree_t *root;
 	createTree(&root);
-	insert(&root, value);
+	insertNode(&root, value);
 	return root;
 }
 
@@ -2181,6 +2555,5 @@ int semanticError(int errorType, char *format, ...){
 	va_end(ap);
 	exit(errorType);
 }
-
 
 
