@@ -18,5 +18,7 @@ ADD_EXECUTABLE(main
   src/comp_graph.c
   src/comp_stack.c
   src/iloc_code.c
+	src/hash_table.c
+	src/optimizations.c
 )
 TARGET_LINK_LIBRARIES(main ${FLEX_LIBRARIES})

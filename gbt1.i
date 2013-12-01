@@ -1,0 +1,16 @@
+loadI 10 => r1
+loadI 10 => r2
+loadI 10 => r3
+loadI 10 => r4
+loadI 10 => r5
+add r1, r2 => r6
+add r3, r4 => r7
+add r5, r6 => r8
+add r7, r8 => r9
+subI r9, 47 => r10
+multI r10, 5 => r11
+loadI 4 => r12
+mult r11, r12 => r13
+subI r13, 10 => r14
+multI r14, 8 => r15
+store r15 => r1
