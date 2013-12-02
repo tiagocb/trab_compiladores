@@ -341,9 +341,6 @@ decl_funcao:	cabecalho '(' parametros ')' var_locais corpo
 									funcao->dictPointer = $1;
 									appendOnChildPointer($$, corpo);
 									
-									//Obtém um rótulo para identificar o início do código da função
-									funcao->dictPointer->functionLabel = getLabel();
-									
 									//Insere o rótulo no início do código da função
 									iloc_code *funtionCode = NULL;
 									insert(&(funtionCode), "L%d: nop \t\t // inicio de %s", funcao->dictPointer->functionLabel, funcao->dictPointer->key);
@@ -372,9 +369,6 @@ decl_funcao:	cabecalho '(' parametros ')' var_locais corpo
 									//Associa a entrada da tabela de símbolos e a sub-árvore do corpo no nodo
 									funcao->dictPointer = simboloFuncao;
 									appendOnChildPointer(funcao, corpo);
-
-									//Obtém um rótulo para identificar o início do código da função
-									funcao->dictPointer->functionLabel = getLabel();
 									
 									//Insere o rótulo no início do código da função
 									iloc_code *funtionCode = NULL;
@@ -412,6 +406,9 @@ cabecalho:		decl_var
 									item->functionSymbolTable = tabelaDeSimbolosAtual;
 									
 									simboloFuncao = item;
+
+									//Obtém um rótulo para identificar o início do código da função
+									simboloFuncao->functionLabel = getLabel();
 									
 									//Inicializa o tamanho do registro de ativação com espaço reservado para endereço de retorno, vínculo estático, dinâmico e estado da máquina
 									item->activationRecordSize = AR_RETURN_ADDRESS_SIZE + AR_STATIC_LINK_SIZE + AR_DYNAMIC_LINK_SIZE + AR_MACHINE_STATE_SIZE;
@@ -1675,7 +1672,7 @@ chamada_funcao:		nome_fun '(' lista_de_argumentos ')'
 									appendOnChildPointer($$, createRoot(IKS_AST_IDENTIFICADOR));
 									//Associa um ponteiro para uma entrada na tabela de símbolos no nó de identificador
 									((comp_tree_t *)$$)->child->dictPointer = item;
-									
+
 									//Cria registro de ativação na pilha (decrementa o fp)
 									insert(&(((comp_tree_t *)$$)->code), "subI fp, %d => fp \t\t // cria RA", simboloFuncao->activationRecordSize);
 									
@@ -1690,7 +1687,7 @@ chamada_funcao:		nome_fun '(' lista_de_argumentos ')'
 									
 									//Insere o estado da máquina no RA
 									//Nada
-									
+
 									//Insere o endereço de retorno e passa o controle para a funcao chamada
 									insert(&(((comp_tree_t *)$$)->code), "addI pc, 24 => r%d", tmpRegister);
 									insert(&(((comp_tree_t *)$$)->code), "store r%d => fp \t\t // insere end de retorno", tmpRegister);

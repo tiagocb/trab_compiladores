@@ -268,6 +268,25 @@ void control_flow_optimizations(){
 		}
 		ptAux = ptAux->next;
 	}
+
+	//destrói a tabela
+	_gst_hash_table_node *node, *tempNode;
+	int i;
+	for(i = 0; i < ht.numberOfLists; i++) {
+		node = ht.table[i];
+		while(node != NULL){
+			tempNode = node;
+			node = node->next;
+			free(tempNode->item->key);
+			free(tempNode->item);
+			free(tempNode);
+		}
+		ht.table[i] = NULL;
+	}
+	ht.numberOfElements = 0;
+	free(ht.table);
+	ht.numberOfLists = 0;
+	ht.table = NULL;
 }
 
 /* Simplificações algébricas
@@ -574,6 +593,37 @@ void propagate_copies(){
 
 		ptAux = ptAux->next;
 	}
+
+	//destrói a tabela
+	_gst_hash_table_node *node, *tempNode;
+	int i;
+	for(i = 0; i < ht.numberOfLists; i++) {
+		node = ht.table[i];
+		while(node != NULL){
+			tempNode = node;
+			node = node->next;
+			free(tempNode->item->data);
+			free(tempNode->item->key);
+			free(tempNode->item);
+			free(tempNode);
+		}
+	}
+	free(ht.table);
+
+
+	//destrói a tabela
+	for(i = 0; i < tmp_ht.numberOfLists; i++) {
+		node = tmp_ht.table[i];
+		while(node != NULL){
+			tempNode = node;
+			node = node->next;
+			free(tempNode->item->data);
+			free(tempNode->item->key);
+			free(tempNode->item);
+			free(tempNode);
+		}
+	}
+	free(tmp_ht.table);
 }
 
 /* Remoção de instruções redundantes e avaliação de operações com constantes
@@ -1468,22 +1518,18 @@ void remove_redundant_instructions_and_evaluate_constant_operations(){
 		}
 	}
 
-		for(i = 0; i < ht.numberOfLists; i++) {
-			node = ht.table[i];
-			while(node != NULL){
-				tempNode = node;
-				node = node->next;
-				free(tempNode->item->key);
-				free(tempNode->item);
-				free(tempNode);
-			}
-			ht.table[i] = NULL;
+	for(i = 0; i < ht.numberOfLists; i++) {
+		node = ht.table[i];
+		while(node != NULL){
+			tempNode = node;
+			node = node->next;
+			free_table_element_2((table_element_2 *)tempNode->item->data);
+			free(tempNode->item->key);
+			free(tempNode->item);
+			free(tempNode);
 		}
-
-		ht.numberOfElements = 0;
-		free(ht.table);
-		ht.numberOfLists = 0;
-		ht.table = NULL;
+	}
+	free(ht.table);
 }
 
 void remove_nops(){
@@ -1509,6 +1555,6 @@ void remove_nops(){
 		else{
 			lastInstruction = ptAux;
 		}	
-		ptAux = ptAux->next;
+		ptAux = lastInstruction->next;
 	}
 }
